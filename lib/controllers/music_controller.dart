@@ -5,7 +5,6 @@ import 'package:just_audio_background/just_audio_background.dart';
 class MusicController {
   static final AudioPlayer _player = AudioPlayer();
 
-  // 🔔 UI State
   static final ValueNotifier<bool> isPlaying = ValueNotifier(false);
   static final ValueNotifier<String?> currentTitle = ValueNotifier(null);
   static final ValueNotifier<String?> currentSubtitle = ValueNotifier(null);
@@ -19,10 +18,8 @@ class MusicController {
   static final ValueNotifier<bool> isShuffle = ValueNotifier(false);
   static final ValueNotifier<LoopMode> loopMode = ValueNotifier(LoopMode.off);
 
-  // 🎵 Playlist
   static List<AudioSource> _playlist = [];
 
-  /// 🔹 Load & Play playlist from server
   static Future<void> playPlaylist({
     required List<Map<String, dynamic>> songs,
     int startIndex = 0,
@@ -106,8 +103,7 @@ class MusicController {
     isShuffle.value = !isShuffle.value;
     await _player.setShuffleModeEnabled(isShuffle.value);
   }
-
-  /// 🔂 Loop (off → one → all)
+  
   static Future<void> toggleLoop() async {
     if (loopMode.value == LoopMode.off) {
       loopMode.value = LoopMode.one;
@@ -119,7 +115,6 @@ class MusicController {
     await _player.setLoopMode(loopMode.value);
   }
 
-  /// 📡 Player Streams
   static void _listenStreams() {
     _player.playerStateStream.listen((state) {
       isPlaying.value = state.playing;
@@ -143,7 +138,6 @@ class MusicController {
     });
   }
 
-  /// 🧹 Dispose
   static Future<void> dispose() async {
     await _player.dispose();
   }

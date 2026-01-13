@@ -69,7 +69,7 @@ class BottomPlayer extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () => MusicController.playPrevious(),
                   icon: const Icon(Icons.skip_previous, color: Colors.white),
                 ),
                 ValueListenableBuilder<bool>(
@@ -86,7 +86,7 @@ class BottomPlayer extends StatelessWidget {
                   },
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () => MusicController.playNext(),
                   icon: const Icon(Icons.skip_next, color: Colors.white),
                 ),
               ],

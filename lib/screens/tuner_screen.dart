@@ -129,7 +129,15 @@ class _TunerScreenState extends State<TunerScreen> {
                   image: 'assets/images/logo.png',
                   title: 'song 2',
                   subtitle: 'song 2 description',
-                  onTap: () {},
+                  onTap: () {
+                    MusicController.playFromUrl(
+                      url:
+                          'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                      title: 'song 2',
+                      artist: 'song',
+                      imageUrl: 'assets/images/logo.png',
+                    );
+                  },
                   onMoreTap: (position) {
                     _showSongMenu(
                       context,
