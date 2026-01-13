@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:music_app/screens/account_screen.dart';
 
 class ClockScreen extends StatefulWidget {
   const ClockScreen({super.key});
@@ -39,6 +41,25 @@ class _ClockScreenState extends State<ClockScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Image.asset(
+            'assets/images/logo.png',
+            height: 80,
+            width: 80,
+            fit: BoxFit.cover,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () => Get.to(() => AccountScreen()),
+            icon: Icon(Icons.person, color: Colors.white),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
