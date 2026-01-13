@@ -53,12 +53,11 @@ class _DownloadedSongsScreenState extends State<DownloadedSongsScreen> {
                     style: const TextStyle(color: Colors.white),
                   ),
                   onTap: () {
-                    // Play the downloaded song
-                    MusicController.playAsset(
-                      path: 'assets/music/song1.mp3',
-                      // Replace with actual local path later
+                    MusicController.playFromUrl(
+                      url: 'assets/music/song1.mp3',
                       title: songTitle,
-                      subtitle: '',
+                      artist: 'Dj Nova',
+                      imageUrl: 'assets/images/logo.png',
                     );
                   },
                 );
