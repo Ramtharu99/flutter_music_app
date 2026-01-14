@@ -4,7 +4,10 @@ import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/screens/account_screen.dart';
 import 'package:music_app/screens/artist_songs_screen.dart';
+import 'package:music_app/screens/playlist_screen.dart';
 import 'package:music_app/screens/search_screen.dart';
+import 'package:music_app/screens/songs_list_screen.dart';
+import 'package:music_app/utils/app_colors.dart';
 import 'package:music_app/widgets/bottom_player.dart';
 import 'package:music_app/widgets/music_card.dart';
 import 'package:music_app/widgets/music_list_tile.dart';
@@ -24,7 +27,7 @@ class _TunerScreenState extends State<TunerScreen> {
     {'label': 'Sounds', 'icon': Icons.graphic_eq},
     {'label': 'Frequencies', 'icon': Icons.waves},
     {'label': 'Songs', 'icon': Icons.music_note},
-    {'label': 'Offline', 'icon': Icons.download},
+    {'label': 'Offline', 'icon': Icons.file_download_off},
   ];
 
   final List<Map<String, String>> songs = [
@@ -144,7 +147,7 @@ class _TunerScreenState extends State<TunerScreen> {
                     subtitle: song['subtitle']!,
                     onTap: () {
                       MusicController.playFromUrl(
-                        url: '', // Replace with offline path
+                        url: '',
                         title: song['title']!,
                         artist: '',
                         imageUrl: 'assets/images/logo.png',
@@ -164,7 +167,10 @@ class _TunerScreenState extends State<TunerScreen> {
             ],
 
             if (selectedChip == 'All') ...[
-              _sectionTitle('New releases'),
+              _sectionTitle(
+                'Playlist',
+                onMoreTap: () => Get.to(() => PlaylistScreen()),
+              ),
               const SizedBox(height: 12),
               SizedBox(
                 height: 200,
@@ -172,7 +178,7 @@ class _TunerScreenState extends State<TunerScreen> {
                   scrollDirection: Axis.horizontal,
                   children: [
                     MusicCard(
-                      image: 'https://picsum.photos/200', // sample image
+                      image: 'https://picsum.photos/200',
                       title: 'Selfish',
                       artist: 'Justin Timberlake',
                       onTap: () {
@@ -223,7 +229,10 @@ class _TunerScreenState extends State<TunerScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              _sectionTitle('Quick picks'),
+              _sectionTitle(
+                'Quick picks',
+                onMoreTap: () => Get.to(() => SongsListScreen()),
+              ),
               const SizedBox(height: 8),
               Column(
                 children: songs.map((song) {
@@ -271,21 +280,17 @@ class _TunerScreenState extends State<TunerScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.greenAccent : Colors.grey.shade900,
+          color: isSelected ? AppColors.primaryColor : Colors.grey.shade900,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.black : Colors.white,
-            ),
+            Icon(icon, size: 16, color: Colors.white),
             const SizedBox(width: 6),
             Text(
               text,
               style: TextStyle(
-                color: isSelected ? Colors.black : Colors.white,
+                color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -296,7 +301,7 @@ class _TunerScreenState extends State<TunerScreen> {
     );
   }
 
-  Widget _sectionTitle(String title) {
+  Widget _sectionTitle(String title, {VoidCallback? onMoreTap}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -308,7 +313,10 @@ class _TunerScreenState extends State<TunerScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text('More', style: TextStyle(color: Colors.grey.shade400)),
+        InkWell(
+          onTap: onMoreTap,
+          child: Text('More', style: TextStyle(color: Colors.grey.shade400)),
+        ),
       ],
     );
   }
