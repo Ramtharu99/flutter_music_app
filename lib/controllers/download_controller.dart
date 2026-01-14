@@ -1,21 +1,29 @@
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-class DownloadController {
+class DownloadController extends GetxController {
   final GetStorage storage = GetStorage();
 
-  /// save downloaded song by title
-  void downloadSong(String title) {
-    List<String> downloadedSongs =
-        storage.read('downloadSongs')?.cast<String>() ?? [];
+  static const String key = 'downloadedSongs';
 
-    if (!downloadedSongs.contains(title)) {
-      downloadedSongs.add(title);
-      storage.write('downloadedSongs', downloadedSongs);
+  List<String> getDownloadedSongs() {
+    return storage.read(key)?.cast<String>() ?? [];
+  }
+
+  void downloadSong(String title) {
+    final songs = getDownloadedSongs();
+
+    if (!songs.contains(title)) {
+      songs.add(title);
+      storage.write(key, songs);
+      update();
     }
   }
 
-  /// Get all downloaded songs
-  List<String> getDownloadedSongs() {
-    return storage.read('downloadedSongs')?.cast<String>() ?? [];
+  void removeSong(String title) {
+    final songs = getDownloadedSongs();
+    songs.remove(title);
+    storage.write(key, songs);
+    update();
   }
 }

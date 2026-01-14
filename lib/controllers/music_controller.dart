@@ -32,7 +32,7 @@ class MusicController {
             id: song['id'].toString(),
             title: song['title'],
             album: song['artist'],
-            artUri: Uri.parse(song['image']), // online image
+            artUri: Uri.parse(song['image']),
           ),
         );
       }).toList();
@@ -51,7 +51,6 @@ class MusicController {
     }
   }
 
-  /// ▶️ Play single online song
   static Future<void> playFromUrl({
     required String url,
     required String title,
@@ -78,32 +77,27 @@ class MusicController {
     }
   }
 
-  /// 🔁 Toggle Play / Pause
   static void togglePlayPause() {
     _player.playing ? _player.pause() : _player.play();
   }
 
-  /// ⏭ Next
   static void playNext() {
     if (_player.hasNext) _player.seekToNext();
   }
 
-  /// ⏮ Previous
   static void playPrevious() {
     if (_player.hasPrevious) _player.seekToPrevious();
   }
 
-  /// 🎯 Seek
   static void seekTo(Duration position) {
     _player.seek(position);
   }
 
-  /// 🔀 Shuffle
   static Future<void> toggleShuffle() async {
     isShuffle.value = !isShuffle.value;
     await _player.setShuffleModeEnabled(isShuffle.value);
   }
-  
+
   static Future<void> toggleLoop() async {
     if (loopMode.value == LoopMode.off) {
       loopMode.value = LoopMode.one;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:music_app/controllers/auth_controller.dart';
+import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/navigation_controller.dart';
 import 'package:music_app/controllers/theme_controller.dart';
 import 'package:music_app/screens/splash_screen.dart';
@@ -19,6 +20,7 @@ void main() async {
   Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(NavigationController(), permanent: true);
+  Get.put(DownloadController(), permanent: true);
 
   runApp(const MyApp());
 }

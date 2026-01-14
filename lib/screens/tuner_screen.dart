@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/screens/account_screen.dart';
+import 'package:music_app/screens/artist_songs_screen.dart';
 import 'package:music_app/screens/search_screen.dart';
 import 'package:music_app/widgets/bottom_player.dart';
 import 'package:music_app/widgets/music_card.dart';
@@ -71,7 +72,6 @@ class _TunerScreenState extends State<TunerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🔹 CHIP ROW
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -85,7 +85,6 @@ class _TunerScreenState extends State<TunerScreen> {
 
             const SizedBox(height: 24),
 
-            /// 🔹 CONTENT BASED ON SELECTED CHIP
             if (selectedChip == 'Sounds') ...[
               _sectionTitle('Sounds'),
               const SizedBox(height: 12),
@@ -173,10 +172,38 @@ class _TunerScreenState extends State<TunerScreen> {
                   scrollDirection: Axis.horizontal,
                   children: [
                     MusicCard(
-                      image: 'assets/images/logo.png',
+                      image: 'https://picsum.photos/200', // sample image
                       title: 'Selfish',
                       artist: 'Justin Timberlake',
+                      onTap: () {
+                        List<Map<String, dynamic>> artistSongs = [
+                          {
+                            'id': 1,
+                            'title': 'Selfish',
+                            'artist': 'Justin Timberlake',
+                            'url':
+                                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                            'image': 'https://picsum.photos/200',
+                          },
+                          {
+                            'id': 2,
+                            'title': 'Mirrors',
+                            'artist': 'Justin Timberlake',
+                            'url':
+                                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+                            'image': 'https://picsum.photos/201',
+                          },
+                        ];
+
+                        Get.to(
+                          () => ArtistSongsScreen(
+                            artist: 'Justin Timberlake',
+                            songs: artistSongs,
+                          ),
+                        );
+                      },
                     ),
+
                     MusicCard(
                       image: 'assets/images/logo.png',
                       title: 'Mugshot',
@@ -231,7 +258,6 @@ class _TunerScreenState extends State<TunerScreen> {
     );
   }
 
-  /// 🔹 CHIP WIDGET
   Widget _chip(String text, IconData icon) {
     final bool isSelected = selectedChip == text;
 
@@ -270,7 +296,6 @@ class _TunerScreenState extends State<TunerScreen> {
     );
   }
 
-  /// 🔹 SECTION TITLE
   Widget _sectionTitle(String title) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,7 +313,6 @@ class _TunerScreenState extends State<TunerScreen> {
     );
   }
 
-  /// 🔹 SONG MENU
   void _showSongMenu(
     BuildContext context,
     Offset position,

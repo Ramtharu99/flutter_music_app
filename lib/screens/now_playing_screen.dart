@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
+import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/utils/app_colors.dart';
 
@@ -10,6 +11,9 @@ class NowPlayingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final DownloadController downloadController =
+        Get.find<DownloadController>();
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -19,12 +23,20 @@ class NowPlayingScreen extends StatelessWidget {
         ),
         backgroundColor: Colors.black,
         title: const Text('Now Playing', style: TextStyle(color: Colors.white)),
+        actions: [
+          IconButton(
+            onPressed: () {
+              showFullScreenDownloadSheet(context, downloadController);
+            },
+
+            icon: Icon(Icons.menu, color: Colors.white),
+          ),
+        ],
       ),
       body: Column(
         children: [
           const SizedBox(height: 20),
 
-          /// 🎵 Album Art
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Image.asset(
@@ -36,8 +48,6 @@ class NowPlayingScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 30),
-
-          /// 🎶 Title (Marquee)
           SizedBox(
             height: 30,
             child: ValueListenableBuilder<String?>(
@@ -71,7 +81,6 @@ class NowPlayingScreen extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          /// 🎤 Artist
           ValueListenableBuilder<String?>(
             valueListenable: MusicController.currentSubtitle,
             builder: (_, subtitle, __) => Text(
@@ -82,7 +91,6 @@ class NowPlayingScreen extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          /// ⏱ Progress bar
           ValueListenableBuilder<Duration>(
             valueListenable: MusicController.currentPosition,
             builder: (_, position, __) {
@@ -129,11 +137,9 @@ class NowPlayingScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          /// 🔀 Shuffle & 🔁 Loop
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              /// Shuffle
               ValueListenableBuilder<bool>(
                 valueListenable: MusicController.isShuffle,
                 builder: (_, shuffle, __) => IconButton(
@@ -145,7 +151,6 @@ class NowPlayingScreen extends StatelessWidget {
                 ),
               ),
 
-              /// Loop
               ValueListenableBuilder(
                 valueListenable: MusicController.loopMode,
                 builder: (_, LoopMode mode, __) {
@@ -171,7 +176,6 @@ class NowPlayingScreen extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          /// ⏮ ▶️ ⏭ Controls
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -213,5 +217,150 @@ class NowPlayingScreen extends StatelessWidget {
     final min = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final sec = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$min:$sec';
+  }
+
+  void showFullScreenDownloadSheet(
+    BuildContext context,
+    DownloadController controller,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SizedBox(
+          height: MediaQuery.of(context).size.height,
+          width: double.infinity,
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    height: 4,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Downloaded Songs",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                GetBuilder<DownloadController>(
+                  builder: (controller) {
+                    final songs = controller.getDownloadedSongs();
+
+                    return Expanded(
+                      child: songs.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No downloaded songs",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: songs.length,
+                              separatorBuilder: (_, __) =>
+                                  Divider(color: Colors.grey.shade800),
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  leading: const Icon(
+                                    Icons.music_note,
+                                    color: Colors.white,
+                                  ),
+                                  title: Text(
+                                    songs[index],
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () {
+                                      showDeleteDialog(
+                                        context,
+                                        songs[index],
+                                        controller,
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void showDeleteDialog(
+    BuildContext context,
+    String songTitle,
+    DownloadController controller,
+  ) {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.delete, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete', style: TextStyle(fontSize: 20, color: Colors.black)),
+          ],
+        ),
+        content: const Text('Are you sure you want to delete this song?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontSize: 16, color: Colors.black),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          TextButton(
+            onPressed: () {
+              controller.removeSong(songTitle); // 🔥 DELETE
+              Get.back(); // 🔥 CLOSE DIALOG
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
