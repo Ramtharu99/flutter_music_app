@@ -1,3 +1,8 @@
+/// Music Card Widget
+/// Displays a music card with image, title, and artist.
+/// Handles both network and asset images.
+library;
+
 import 'package:flutter/material.dart';
 
 class MusicCard extends StatelessWidget {
@@ -26,21 +31,7 @@ class MusicCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                image,
-                height: 140,
-                width: 140,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  // fallback if image fails to load
-                  return Container(
-                    height: 140,
-                    width: 140,
-                    color: Colors.grey,
-                    child: const Icon(Icons.music_note, color: Colors.white),
-                  );
-                },
-              ),
+              child: _buildImage(),
             ),
             const SizedBox(height: 8),
             Text(
@@ -59,6 +50,59 @@ class MusicCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImage() {
+    // Check if it's a network URL or asset
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return Image.network(
+        image,
+        height: 140,
+        width: 140,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _placeholderImage();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            height: 140,
+            width: 140,
+            color: Colors.grey.shade800,
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.grey.shade400,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      // Asset image
+      return Image.asset(
+        image.isNotEmpty ? image : 'assets/images/logo.png',
+        height: 140,
+        width: 140,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _placeholderImage();
+        },
+      );
+    }
+  }
+
+  Widget _placeholderImage() {
+    return Container(
+      height: 140,
+      width: 140,
+      color: Colors.grey.shade800,
+      child: const Icon(Icons.music_note, color: Colors.white, size: 40),
     );
   }
 }

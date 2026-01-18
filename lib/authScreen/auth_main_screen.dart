@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/authScreen/signIn_screen.dart';
+import 'package:music_app/authScreen/sign_in_screen.dart';
 
 class AuthMainScreen extends StatefulWidget {
   const AuthMainScreen({super.key});
@@ -38,7 +38,7 @@ class _AuthMainScreenState extends State<AuthMainScreen> {
                         borderRadius: BorderRadius.circular(50),
                         side: const BorderSide(color: Colors.white, width: 1),
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                     ),
                     child: Text(
                       'Log in',
@@ -59,7 +59,7 @@ class _AuthMainScreenState extends State<AuthMainScreen> {
                         borderRadius: BorderRadius.circular(50),
                         side: const BorderSide(color: Colors.white, width: 1),
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                     ),
                     child: Text(
                       'Social login',
@@ -80,7 +80,7 @@ class _AuthMainScreenState extends State<AuthMainScreen> {
                         borderRadius: BorderRadius.circular(50),
                         side: const BorderSide(color: Colors.white, width: 1),
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                     ),
                     child: Text(
                       'Create an account',

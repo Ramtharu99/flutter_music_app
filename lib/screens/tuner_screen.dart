@@ -1,12 +1,23 @@
+/// Tuner Screen (Home Screen)
+/// Main screen that shows:
+/// - Online: Fetches songs from API
+/// - Offline: Shows downloaded/offline songs only
+///
+/// Uses ApiService for all API calls and OfflineStorageService for offline data.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
+import 'package:music_app/models/song_model.dart';
 import 'package:music_app/screens/account_screen.dart';
-import 'package:music_app/screens/artist_songs_screen.dart';
 import 'package:music_app/screens/playlist_screen.dart';
 import 'package:music_app/screens/search_screen.dart';
 import 'package:music_app/screens/songs_list_screen.dart';
+import 'package:music_app/services/api_service.dart';
+import 'package:music_app/services/connectivity_service.dart';
+import 'package:music_app/services/offline_storage_service.dart';
 import 'package:music_app/utils/app_colors.dart';
 import 'package:music_app/widgets/bottom_player.dart';
 import 'package:music_app/widgets/music_card.dart';
@@ -30,23 +41,80 @@ class _TunerScreenState extends State<TunerScreen> {
     {'label': 'Offline', 'icon': Icons.file_download_off},
   ];
 
-  final List<Map<String, String>> songs = [
-    {
-      'title': 'Song 1',
-      'subtitle': 'Song 1 description',
-      'url': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    },
-    {
-      'title': 'Song 2',
-      'subtitle': 'Song 2 description',
-      'url': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    },
-  ];
+  // Services
+  final ApiService _apiService = ApiService();
+  final OfflineStorageService _offlineStorage = OfflineStorageService();
+  final ConnectivityService _connectivityService =
+      Get.find<ConnectivityService>();
 
-  final List<Map<String, String>> offlineSongs = [
-    {'title': 'Offline Song 1', 'subtitle': 'Offline description'},
-    {'title': 'Offline Song 2', 'subtitle': 'Offline description'},
-  ];
+  // State
+  List<Song> songs = [];
+  List<Song> featuredSongs = [];
+  List<Song> offlineSongs = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    // Always load offline songs
+    offlineSongs = _offlineStorage.getDownloadedSongs();
+
+    if (_connectivityService.isOnline) {
+      // Online: Fetch from API
+      await _loadOnlineData();
+    } else {
+      // Offline: Use cached data
+      _loadOfflineData();
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  /// Load data from API when online
+  Future<void> _loadOnlineData() async {
+    try {
+      // Fetch songs from API
+      final songsResponse = await _apiService.getSongs();
+      if (songsResponse.success && songsResponse.data != null) {
+        songs = songsResponse.data!;
+        // Cache for offline use
+        _offlineStorage.cacheSongs(songs);
+      }
+
+      // Fetch featured songs
+      final featuredResponse = await _apiService.getFeaturedSongs();
+      if (featuredResponse.success && featuredResponse.data != null) {
+        featuredSongs = featuredResponse.data!;
+      }
+    } catch (e) {
+      debugPrint('Error loading online data: $e');
+      // Fallback to cached data
+      _loadOfflineData();
+    }
+  }
+
+  /// Load cached data when offline
+  void _loadOfflineData() {
+    songs = _offlineStorage.getCachedSongs();
+    featuredSongs = songs.take(5).toList();
+
+    if (songs.isEmpty && offlineSongs.isEmpty) {
+      // If no data at all, show a message
+      setState(() {
+        selectedChip = 'Offline';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +127,27 @@ class _TunerScreenState extends State<TunerScreen> {
           padding: const EdgeInsets.all(8),
           child: Image.asset('assets/images/logo.png'),
         ),
+        title: Obx(() {
+          if (_connectivityService.isOffline) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.cloud_off, color: Colors.orange, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Offline Mode',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            );
+          }
+          return const SizedBox.shrink();
+        }),
         actions: [
           IconButton(
             onPressed: () => Get.to(() => const SearchScreen()),
@@ -70,200 +159,200 @@ class _TunerScreenState extends State<TunerScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: chips
-                    .map(
-                      (chip) => _chip(chip['label'], chip['icon'] as IconData),
-                    )
-                    .toList(),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            if (selectedChip == 'Sounds') ...[
-              _sectionTitle('Sounds'),
-              const SizedBox(height: 12),
-              const Text(
-                'Ambient & nature sounds coming soon...',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-
-            if (selectedChip == 'Frequencies') ...[
-              _sectionTitle('Frequencies'),
-              const SizedBox(height: 12),
-              const Text(
-                'Healing frequencies coming soon...',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-
-            if (selectedChip == 'Songs') ...[
-              _sectionTitle('Quick picks'),
-              const SizedBox(height: 8),
-              Column(
-                children: songs.map((song) {
-                  return MusicListTile(
-                    image: 'assets/images/logo.png',
-                    title: song['title']!,
-                    subtitle: song['subtitle']!,
-                    onTap: () {
-                      MusicController.playFromUrl(
-                        url: song['url']!,
-                        title: song['title']!,
-                        artist: '',
-                        imageUrl: 'assets/images/logo.png',
-                      );
-                    },
-                    onMoreTap: (position) {
-                      _showSongMenu(
-                        context,
-                        position,
-                        song['title']!,
-                        song['url']!,
-                      );
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-
-            if (selectedChip == 'Offline') ...[
-              _sectionTitle('Offline songs'),
-              const SizedBox(height: 8),
-              Column(
-                children: offlineSongs.map((song) {
-                  return MusicListTile(
-                    image: 'assets/images/logo.png',
-                    title: song['title']!,
-                    subtitle: song['subtitle']!,
-                    onTap: () {
-                      MusicController.playFromUrl(
-                        url: '',
-                        title: song['title']!,
-                        artist: '',
-                        imageUrl: 'assets/images/logo.png',
-                      );
-                    },
-                    onMoreTap: (position) {
-                      _showSongMenu(
-                        context,
-                        position,
-                        song['title']!,
-                        'offline',
-                      );
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-
-            if (selectedChip == 'All') ...[
-              _sectionTitle(
-                'Playlist',
-                onMoreTap: () => Get.to(() => PlaylistScreen()),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 200,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    MusicCard(
-                      image: 'https://picsum.photos/200',
-                      title: 'Selfish',
-                      artist: 'Justin Timberlake',
-                      onTap: () {
-                        List<Map<String, dynamic>> artistSongs = [
-                          {
-                            'id': 1,
-                            'title': 'Selfish',
-                            'artist': 'Justin Timberlake',
-                            'url':
-                                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                            'image': 'https://picsum.photos/200',
-                          },
-                          {
-                            'id': 2,
-                            'title': 'Mirrors',
-                            'artist': 'Justin Timberlake',
-                            'url':
-                                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                            'image': 'https://picsum.photos/201',
-                          },
-                        ];
-
-                        Get.to(
-                          () => ArtistSongsScreen(
-                            artist: 'Justin Timberlake',
-                            songs: artistSongs,
-                          ),
-                        );
-                      },
+                    // Category chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: chips
+                            .map(
+                              (chip) => _chip(
+                                chip['label'],
+                                chip['icon'] as IconData,
+                              ),
+                            )
+                            .toList(),
+                      ),
                     ),
 
-                    MusicCard(
-                      image: 'assets/images/logo.png',
-                      title: 'Mugshot',
-                      artist: 'Huddy',
-                    ),
-                    MusicCard(
-                      image: 'assets/images/logo.png',
-                      title: 'Mugshot',
-                      artist: 'Huddy',
-                    ),
-                    MusicCard(
-                      image: 'assets/images/logo.png',
-                      title: 'Mugshot',
-                      artist: 'Huddy',
-                    ),
+                    const SizedBox(height: 24),
+
+                    // Content based on selected chip
+                    if (selectedChip == 'Sounds') ...[
+                      _sectionTitle('Sounds'),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Ambient & nature sounds coming soon...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+
+                    if (selectedChip == 'Frequencies') ...[
+                      _sectionTitle('Frequencies'),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Healing frequencies coming soon...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+
+                    if (selectedChip == 'Songs') ...[
+                      _sectionTitle('Quick picks'),
+                      const SizedBox(height: 8),
+                      _buildSongsList(songs),
+                    ],
+
+                    if (selectedChip == 'Offline') ...[
+                      _sectionTitle('Downloaded Songs'),
+                      const SizedBox(height: 8),
+                      if (offlineSongs.isEmpty)
+                        _emptyState(
+                          'No downloaded songs',
+                          'Download songs to play them offline',
+                        )
+                      else
+                        _buildSongsList(offlineSongs),
+                    ],
+
+                    if (selectedChip == 'All') ...[
+                      // Playlist section
+                      _sectionTitle(
+                        'Playlist',
+                        onMoreTap: () => Get.to(() => PlaylistScreen()),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 200,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: featuredSongs.isNotEmpty
+                              ? featuredSongs
+                                    .map(
+                                      (song) => MusicCard(
+                                        image: song.imageUrl,
+                                        title: song.title,
+                                        artist: song.artist,
+                                        onTap: () {
+                                          MusicController.playFromUrl(
+                                            url: song.url,
+                                            title: song.title,
+                                            artist: song.artist,
+                                            imageUrl: song.imageUrl,
+                                          );
+                                        },
+                                      ),
+                                    )
+                                    .toList()
+                              : [
+                                  // Fallback cards when no API data
+                                  MusicCard(
+                                    image: 'assets/images/logo.png',
+                                    title: 'Sample Song',
+                                    artist: 'Artist Name',
+                                  ),
+                                ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Quick picks section
+                      _sectionTitle(
+                        'Quick picks',
+                        onMoreTap: () => Get.to(() => SongsListScreen()),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSongsList(songs),
+
+                      // Show offline songs if available
+                      if (offlineSongs.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _sectionTitle('Offline Songs'),
+                        const SizedBox(height: 8),
+                        _buildSongsList(offlineSongs.take(3).toList()),
+                      ],
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              _sectionTitle(
-                'Quick picks',
-                onMoreTap: () => Get.to(() => SongsListScreen()),
-              ),
-              const SizedBox(height: 8),
-              Column(
-                children: songs.map((song) {
-                  return MusicListTile(
-                    image: 'assets/images/logo.png',
-                    title: song['title']!,
-                    subtitle: song['subtitle']!,
-                    onTap: () {
-                      MusicController.playFromUrl(
-                        url: song['url']!,
-                        title: song['title']!,
-                        artist: '',
-                        imageUrl: 'assets/images/logo.png',
-                      );
-                    },
-                    onMoreTap: (position) {
-                      _showSongMenu(
-                        context,
-                        position,
-                        song['title']!,
-                        song['url']!,
-                      );
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ],
-        ),
-      ),
+            ),
       bottomSheet: const BottomPlayer(),
+    );
+  }
+
+  /// Build songs list widget
+  Widget _buildSongsList(List<Song> songsList) {
+    if (songsList.isEmpty) {
+      return Center(
+        child: _emptyState(
+          'No songs available',
+          _connectivityService.isOffline
+              ? 'Connect to internet to load songs'
+              : 'Pull to refresh',
+        ),
+      );
+    }
+
+    return Column(
+      children: songsList.map((song) {
+        return MusicListTile(
+          image: song.imageUrl.startsWith('http')
+              ? song.imageUrl
+              : 'assets/images/logo.png',
+          title: song.title,
+          subtitle: song.artist,
+          onTap: () {
+            if (_connectivityService.isOffline && !song.isDownloaded) {
+              Get.snackbar(
+                'Offline',
+                'This song is not available offline',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+            MusicController.playFromUrl(
+              url: song.localPath ?? song.url,
+              title: song.title,
+              artist: song.artist,
+              imageUrl: song.imageUrl,
+            );
+          },
+          onMoreTap: (position) {
+            _showSongMenu(context, position, song);
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  /// Empty state widget
+  Widget _emptyState(String title, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Icon(Icons.music_off, size: 48, color: Colors.grey.shade600),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 
@@ -289,7 +378,7 @@ class _TunerScreenState extends State<TunerScreen> {
             const SizedBox(width: 6),
             Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -313,51 +402,70 @@ class _TunerScreenState extends State<TunerScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        InkWell(
-          onTap: onMoreTap,
-          child: Text('More', style: TextStyle(color: Colors.grey.shade400)),
-        ),
+        if (onMoreTap != null)
+          InkWell(
+            onTap: onMoreTap,
+            child: Text('More', style: TextStyle(color: Colors.grey.shade400)),
+          ),
       ],
     );
   }
 
-  void _showSongMenu(
-    BuildContext context,
-    Offset position,
-    String title,
-    String path,
-  ) async {
-    final DownloadController downloadController = DownloadController();
+  void _showSongMenu(BuildContext context, Offset position, Song song) async {
+    final DownloadController downloadController =
+        Get.find<DownloadController>();
 
     final selected = await showMenu(
       context: context,
       color: Colors.grey.shade900,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       position: RelativeRect.fromLTRB(position.dx, position.dy, 0, 0),
-      items: const [
+      items: [
         PopupMenuItem(
           value: 'download',
-          child: Text('Download', style: TextStyle(color: Colors.white)),
+          child: Row(
+            children: [
+              Icon(
+                song.isDownloaded ? Icons.check : Icons.download,
+                color: song.isDownloaded ? Colors.green : Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                song.isDownloaded ? 'Downloaded' : 'Download',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'save',
           child: Text('Save', style: TextStyle(color: Colors.white)),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'playlist',
           child: Text('Add to Playlist', style: TextStyle(color: Colors.white)),
         ),
       ],
     );
 
-    if (selected == 'download') {
-      downloadController.downloadSong(title);
+    if (selected == 'download' && !song.isDownloaded) {
+      // Save song to offline storage
+      final downloadedSong = song.copyWith(isDownloaded: true);
+      _offlineStorage.saveDownloadedSong(downloadedSong);
+      downloadController.downloadSong(song.title);
+
       Get.snackbar(
         'Downloaded',
-        '$title saved successfully',
+        '${song.title} saved for offline playback',
         backgroundColor: Colors.grey.shade800,
         colorText: Colors.white,
       );
+
+      // Refresh to show updated state
+      setState(() {
+        offlineSongs = _offlineStorage.getDownloadedSongs();
+      });
     }
   }
 }

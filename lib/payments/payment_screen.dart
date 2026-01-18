@@ -48,7 +48,7 @@ class PaymentScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(50),
                         side: const BorderSide(color: Colors.white, width: 1),
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                     ),
                     child: const Text(
                       'Membership',
@@ -77,7 +77,7 @@ class PaymentScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(50),
                         side: const BorderSide(color: Colors.white, width: 1),
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                     ),
                     child: const Text(
                       'Buy',

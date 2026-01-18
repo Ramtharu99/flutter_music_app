@@ -1,28 +1,28 @@
-/// Sign Up Screen
-/// Handles new user registration with API integration.
+/// Sign In Screen
+/// Handles user login with:
+/// - Online: API authentication
+/// - Offline: Stored credentials check
 library;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/authScreen/sign_in_screen.dart';
+import 'package:music_app/authScreen/forgot_screen.dart';
+import 'package:music_app/authScreen/signup_screen.dart';
 import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/screens/main_screen.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/widgets/custom_text_field.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+class SignInScreen extends StatefulWidget {
+  const SignInScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  State<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController _firstName = TextEditingController();
-  final TextEditingController _lastName = TextEditingController();
+class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPassword = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final AuthController _authController = Get.find<AuthController>();
@@ -31,11 +31,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _firstName.dispose();
-    _lastName.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -60,7 +57,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Offline warning
+                // Offline indicator
                 Obx(() {
                   if (_connectivityService.isOffline) {
                     return Container(
@@ -71,13 +68,17 @@ class _SignupScreenState extends State<SignupScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.orange),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.wifi_off, color: Colors.orange, size: 20),
-                          SizedBox(width: 8),
-                          Expanded(
+                          const Icon(
+                            Icons.wifi_off,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
                             child: Text(
-                              'Internet required for registration',
+                              'You are offline. Connect to sign in with new account.',
                               style: TextStyle(
                                 color: Colors.orange,
                                 fontSize: 12,
@@ -90,32 +91,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   }
                   return const SizedBox.shrink();
                 }),
-
-                CustomTextField(
-                  labelText: 'First Name',
-                  prefixIcon: Icons.person_outline,
-                  controller: _firstName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your first name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                CustomTextField(
-                  labelText: 'Last Name',
-                  prefixIcon: Icons.person_outline,
-                  controller: _lastName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your last name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
 
                 CustomTextField(
                   labelText: 'Email',
@@ -132,7 +107,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
 
                 CustomTextField(
                   labelText: 'Password',
@@ -149,24 +124,18 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
-                CustomTextField(
-                  labelText: 'Confirm Password',
-                  prefixIcon: Icons.lock_outline,
-                  isPassword: true,
-                  controller: _confirmPassword,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Get.to(() => ForgotScreen()),
+                    child: const Text(
+                      'Forgot Password',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ),
                 ),
-
                 const SizedBox(height: 24),
 
                 // Error message
@@ -203,13 +172,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   return const SizedBox.shrink();
                 }),
 
+                // Login button
                 SizedBox(
                   width: double.infinity,
                   child: Obx(
                     () => ElevatedButton(
                       onPressed: _authController.isLoading
                           ? null
-                          : _handleSignUp,
+                          : _handleSignIn,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -227,7 +197,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                             )
                           : const Text(
-                              'Sign Up',
+                              'Login',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,
@@ -236,21 +206,37 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+
+                // Skip login for demo/offline (optional)
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      _authController.loginOffline();
+                      Get.offAll(() => const MainScreen());
+                    },
+                    child: Text(
+                      'Continue without login',
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
 
                 const SizedBox(height: 8),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      "Already have an account?",
+                      "Don't have an account?",
                       style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     TextButton(
-                      onPressed: () => Get.to(() => SignInScreen()),
+                      onPressed: () => Get.to(() => SignupScreen()),
                       child: const Text(
-                        'Sign In',
+                        'Sign Up',
                         style: TextStyle(fontSize: 14, color: Colors.white),
                       ),
                     ),
@@ -264,12 +250,10 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Future<void> _handleSignUp() async {
+  Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await _authController.register(
-      firstName: _firstName.text.trim(),
-      lastName: _lastName.text.trim(),
+    final success = await _authController.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );

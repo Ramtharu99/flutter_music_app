@@ -52,7 +52,7 @@ class NowPlayingScreen extends StatelessWidget {
             height: 30,
             child: ValueListenableBuilder<String?>(
               valueListenable: MusicController.currentTitle,
-              builder: (_, title, __) {
+              builder: (context, title, child) {
                 if ((title ?? '').length < 20) {
                   return Text(
                     title ?? '',
@@ -83,7 +83,7 @@ class NowPlayingScreen extends StatelessWidget {
 
           ValueListenableBuilder<String?>(
             valueListenable: MusicController.currentSubtitle,
-            builder: (_, subtitle, __) => Text(
+            builder: (context, subtitle, child) => Text(
               subtitle ?? '',
               style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
             ),
@@ -93,10 +93,10 @@ class NowPlayingScreen extends StatelessWidget {
 
           ValueListenableBuilder<Duration>(
             valueListenable: MusicController.currentPosition,
-            builder: (_, position, __) {
+            builder: (context, position, child) {
               return ValueListenableBuilder<Duration>(
                 valueListenable: MusicController.totalDuration,
-                builder: (_, total, __) {
+                builder: (context, total, child) {
                   return Column(
                     children: [
                       Slider(
@@ -142,7 +142,7 @@ class NowPlayingScreen extends StatelessWidget {
             children: [
               ValueListenableBuilder<bool>(
                 valueListenable: MusicController.isShuffle,
-                builder: (_, shuffle, __) => IconButton(
+                builder: (context, shuffle, child) => IconButton(
                   onPressed: MusicController.toggleShuffle,
                   icon: Icon(
                     Icons.shuffle,
@@ -153,7 +153,7 @@ class NowPlayingScreen extends StatelessWidget {
 
               ValueListenableBuilder(
                 valueListenable: MusicController.loopMode,
-                builder: (_, LoopMode mode, __) {
+                builder: (context, LoopMode mode, child) {
                   IconData icon;
                   if (mode == LoopMode.one) {
                     icon = Icons.repeat_one;
@@ -189,7 +189,7 @@ class NowPlayingScreen extends StatelessWidget {
               ),
               ValueListenableBuilder<bool>(
                 valueListenable: MusicController.isPlaying,
-                builder: (_, playing, __) => IconButton(
+                builder: (context, playing, child) => IconButton(
                   onPressed: MusicController.togglePlayPause,
                   icon: Icon(
                     playing ? Icons.pause_circle : Icons.play_circle,
@@ -280,7 +280,7 @@ class NowPlayingScreen extends StatelessWidget {
                             )
                           : ListView.separated(
                               itemCount: songs.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (context, index) =>
                                   Divider(color: Colors.grey.shade800),
                               itemBuilder: (context, index) {
                                 return ListTile(

@@ -53,7 +53,7 @@ class BottomPlayer extends StatelessWidget {
                       ),
                       ValueListenableBuilder<String?>(
                         valueListenable: MusicController.currentSubtitle,
-                        builder: (_, subtitle, __) {
+                        builder: (context, subtitle, child) {
                           return Text(
                             subtitle ?? '',
                             style: TextStyle(
@@ -74,7 +74,7 @@ class BottomPlayer extends StatelessWidget {
                 ),
                 ValueListenableBuilder<bool>(
                   valueListenable: MusicController.isPlaying,
-                  builder: (_, playing, __) {
+                  builder: (context, playing, child) {
                     return IconButton(
                       onPressed: MusicController.togglePlayPause,
                       icon: Icon(

@@ -1,3 +1,8 @@
+/// Music List Tile Widget
+/// Displays a song in a list format.
+/// Handles both network and asset images.
+library;
+
 import 'package:flutter/material.dart';
 
 class MusicListTile extends StatelessWidget {
@@ -6,6 +11,7 @@ class MusicListTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onTap;
   final void Function(Offset position)? onMoreTap;
+  final bool isDownloaded;
 
   const MusicListTile({
     super.key,
@@ -14,6 +20,7 @@ class MusicListTile extends StatelessWidget {
     required this.subtitle,
     this.onTap,
     this.onMoreTap,
+    this.isDownloaded = false,
   });
 
   @override
@@ -26,12 +33,7 @@ class MusicListTile extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                image,
-                height: 48,
-                width: 48,
-                fit: BoxFit.cover,
-              ),
+              child: _buildImage(),
             ),
 
             const SizedBox(width: 12),
@@ -40,15 +42,30 @@ class MusicListTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isDownloaded)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.download_done,
+                            size: 14,
+                            color: Colors.green.shade400,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -73,6 +90,40 @@ class MusicListTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImage() {
+    // Check if it's a network URL or asset
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return Image.network(
+        image,
+        height: 48,
+        width: 48,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _placeholderImage();
+        },
+      );
+    } else {
+      return Image.asset(
+        image.isNotEmpty ? image : 'assets/images/logo.png',
+        height: 48,
+        width: 48,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _placeholderImage();
+        },
+      );
+    }
+  }
+
+  Widget _placeholderImage() {
+    return Container(
+      height: 48,
+      width: 48,
+      color: Colors.grey.shade800,
+      child: const Icon(Icons.music_note, color: Colors.white, size: 20),
     );
   }
 }

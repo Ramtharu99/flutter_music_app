@@ -6,12 +6,15 @@ import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/navigation_controller.dart';
 import 'package:music_app/controllers/theme_controller.dart';
 import 'package:music_app/screens/splash_screen.dart';
+import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/utils/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await GetStorage.init();
 
+  Get.put(ConnectivityService(), permanent: true);
   Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(NavigationController(), permanent: true);
@@ -27,7 +30,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Music player',
+      title: 'Music Player',
       theme: AppThemes.light,
       darkTheme: AppThemes.dark,
       defaultTransition: Transition.fade,

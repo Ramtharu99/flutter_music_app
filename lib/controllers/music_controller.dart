@@ -37,12 +37,7 @@ class MusicController {
         );
       }).toList();
 
-      final playlist = ConcatenatingAudioSource(
-        useLazyPreparation: true,
-        children: _playlist,
-      );
-
-      await _player.setAudioSource(playlist, initialIndex: startIndex);
+      await _player.setAudioSources(_playlist, initialIndex: startIndex);
 
       _listenStreams();
       _player.play();
@@ -124,7 +119,7 @@ class MusicController {
 
     _player.currentIndexStream.listen((index) {
       currentIndex.value = index;
-      final tag = _player.sequenceState?.currentSource?.tag;
+      final tag = _player.sequenceState.currentSource?.tag;
       if (tag is MediaItem) {
         currentTitle.value = tag.title;
         currentSubtitle.value = tag.album;

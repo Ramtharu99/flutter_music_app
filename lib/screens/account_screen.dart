@@ -1,10 +1,13 @@
+library;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/authScreen/signIn_screen.dart';
+import 'package:music_app/authScreen/sign_in_screen.dart';
 import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/screens/downloaded_songs_screen.dart';
 import 'package:music_app/screens/edit_profile_screen.dart';
 import 'package:music_app/screens/help_center_screen.dart';
+import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/utils/app_colors.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -15,6 +18,10 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
+  final AuthController _authController = Get.find<AuthController>();
+  final ConnectivityService _connectivityService =
+      Get.find<ConnectivityService>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,12 +30,23 @@ class _AccountScreenState extends State<AccountScreen> {
         backgroundColor: Colors.black,
         leading: IconButton(
           onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
-        title: Text(
+        title: const Text(
           'My Account',
           style: TextStyle(fontSize: 20, color: Colors.white),
         ),
+        actions: [
+          Obx(() {
+            if (_connectivityService.isOffline) {
+              return const Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Icon(Icons.cloud_off, color: Colors.orange, size: 20),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -43,98 +61,146 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildProfileSection(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: AssetImage('assets/images/avatar.jpg'),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'John Snow',
-            style: TextStyle(fontSize: 16, color: Colors.white70),
-          ),
+    return Obx(() {
+      final user = _authController.currentUser;
 
-          const SizedBox(height: 8),
-          Text(
-            'johnsnow123@gmail.com',
-            style: TextStyle(fontSize: 12, color: Colors.white70),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: () => Get.to(() => EditProfileScreen()),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-              side: BorderSide(color: Colors.white70),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Profile image
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.grey.shade800,
+              backgroundImage: user?.profileImage != null
+                  ? NetworkImage(user!.profileImage!)
+                  : null,
+              child: user?.profileImage == null
+                  ? Icon(Icons.person, size: 50, color: Colors.grey.shade400)
+                  : null,
+            ),
+            const SizedBox(height: 18),
+
+            // Name
+            Text(
+              user?.fullName ?? 'Guest User',
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            child: Text(
-              'Edit Profile',
-              style: TextStyle(fontSize: 16, color: Colors.white),
+
+            const SizedBox(height: 8),
+
+            // Email
+            Text(
+              user?.email ?? 'No email',
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
             ),
-          ),
-        ],
-      ),
-    );
+
+            // Premium badge
+            if (user?.isPremium == true) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'Premium',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () => Get.to(() => EditProfileScreen()),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 32,
+                ),
+                side: const BorderSide(color: Colors.white70),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Edit Profile',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildMenuSection(BuildContext context) {
     final menuItems = [
-      {'icon': Icons.music_note, 'title': 'Downloaded Songs'},
+      {'icon': Icons.download_done, 'title': 'Downloaded Songs'},
       {'icon': Icons.help_outline, 'title': 'Help Center'},
-      {'icon': Icons.login_outlined, 'title': 'Logout'},
+      {'icon': Icons.logout, 'title': 'Logout'},
     ];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        children: [
-          Column(
-            children: menuItems.map((item) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+        children: menuItems.map((item) {
+          final isLogout = item['title'] == 'Logout';
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: Icon(
+                item['icon'] as IconData,
+                color: isLogout ? Colors.red : AppColors.primaryColor,
+              ),
+              title: Text(
+                item['title'] as String,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isLogout ? Colors.red : Colors.white,
                 ),
-                child: ListTile(
-                  leading: Icon(
-                    item['icon'] as IconData,
-                    color: AppColors.primaryColor,
-                  ),
-                  title: Text(
-                    item['title'] as String,
-                    style: TextStyle(fontSize: 14, color: Colors.black),
-                  ),
-                  trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
-                  onTap: () {
-                    if (item['title'] == 'Logout') {
-                      _showLogoutDialog(context);
-                    } else if (item['title'] == 'Help Center') {
-                      Get.to(() => HelpCenterScreen());
-                    } else if (item['title'] == 'Downloaded Songs') {
-                      Get.to(() => DownloadedSongsScreen());
-                    }
-                  },
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+              ),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
+              onTap: () {
+                if (item['title'] == 'Logout') {
+                  _showLogoutDialog(context);
+                } else if (item['title'] == 'Help Center') {
+                  Get.to(() => HelpCenterScreen());
+                } else if (item['title'] == 'Downloaded Songs') {
+                  Get.to(() => DownloadedSongsScreen());
+                }
+              },
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -142,7 +208,7 @@ class _AccountScreenState extends State<AccountScreen> {
   void _showLogoutDialog(BuildContext context) {
     Get.dialog(
       AlertDialog(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: Colors.grey.shade900,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 24,
@@ -154,23 +220,24 @@ class _AccountScreenState extends State<AccountScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.login_rounded,
-                color: AppColors.primaryColor,
+              child: const Icon(
+                Icons.logout_rounded,
+                color: Colors.red,
                 size: 32,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Are your sure you want to logout?',
+            const SizedBox(height: 16),
+            const Text(
+              'Are you sure you want to logout?',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: Colors.white,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             Row(
@@ -180,16 +247,16 @@ class _AccountScreenState extends State<AccountScreen> {
                     onPressed: () => Get.back(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: Colors.grey[700]!),
+                      side: BorderSide(color: Colors.grey[600]!),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
+                    child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black,
+                        fontSize: 14,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -198,21 +265,22 @@ class _AccountScreenState extends State<AccountScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      final AuthController authController =
-                          Get.find<AuthController>();
-                      authController.logout();
+                    onPressed: () async {
+                      await _authController.logout();
                       Get.offAll(() => SignInScreen());
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
+                      backgroundColor: Colors.red,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: Text(
+                    child: const Text(
                       'Logout',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),

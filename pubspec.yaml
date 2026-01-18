@@ -47,6 +47,7 @@ dependencies:
   audio_service: ^0.18.18
   just_audio_background: ^0.0.1-beta.17
   connectivity_plus: ^7.0.0
+  http: ^1.2.0
 
 
 dev_dependencies:

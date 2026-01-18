@@ -18,8 +18,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     return Obx(
       () => BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey[800],
         currentIndex: navigationController.currentIndex.value,
+        unselectedItemColor: Colors.white,
+        unselectedLabelStyle: TextStyle(color: Colors.white),
         onTap: (index) => navigationController.changeIndex(index),
         items: [
           BottomNavigationBarItem(

@@ -1,9 +1,18 @@
+/// Splash Screen
+/// Handles app initialization and navigation based on:
+/// - Logged in user (online or offline) → Main screen
+/// - Not logged in → Sign in screen
+/// - First time user and not logged in → Sign in screen
+///
+/// Payment screen and auth main screen are skipped.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/authScreen/signIn_screen.dart';
+import 'package:music_app/authScreen/sign_in_screen.dart';
 import 'package:music_app/controllers/auth_controller.dart';
-import 'package:music_app/payments/payment_screen.dart';
 import 'package:music_app/screens/main_screen.dart';
+import 'package:music_app/services/connectivity_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,17 +34,43 @@ class _SplashScreenState extends State<SplashScreen> {
     // Wait for storage to initialize
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Wait Splash animation
+    // Wait for splash animation
     await Future.delayed(const Duration(milliseconds: 2000));
 
     if (!mounted) return;
 
-    if (authController.isFirstTime) {
-      Get.offAll(() => const PaymentScreen());
-    } else if (authController.isLoggedIn) {
+    // Check connectivity
+    final connectivityService = Get.find<ConnectivityService>();
+    await connectivityService.checkConnectivity();
+
+    final isOffline = connectivityService.isOffline;
+    final isLoggedIn = authController.isLoggedIn;
+
+    debugPrint('🚀 Navigation Decision:');
+    debugPrint('   - Offline: $isOffline');
+    debugPrint('   - Logged In: $isLoggedIn');
+
+    if (isLoggedIn) {
+      // User is logged in (works offline too!)
+      // Navigate directly to main screen
       Get.offAll(() => const MainScreen());
     } else {
-      Get.offAll(() => SignInScreen());
+      // First time or not logged in - go to sign in screen
+      // Skip payment screen and auth main screen
+      if (isOffline) {
+        Get.offAll(() => SignInScreen());
+        Future.delayed(const Duration(milliseconds: 500), () {
+          Get.snackbar(
+            'Offline Mode',
+            'Connect to internet to sign in.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.grey.shade800,
+            colorText: Colors.white,
+          );
+        });
+      } else {
+        Get.offAll(() => SignInScreen());
+      }
     }
   }
 

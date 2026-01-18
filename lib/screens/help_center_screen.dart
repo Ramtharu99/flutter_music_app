@@ -9,6 +9,31 @@ class HelpCenterScreen extends StatefulWidget {
 }
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
+  // Example list of help topics
+  final List<Map<String, String>> _helpTopics = [
+    {
+      'title': 'How to Download Songs',
+      'description':
+          '1. Open a song.\n2. Tap the download icon.\n3. The song will be saved to your library for offline play.',
+    },
+    {
+      'title': 'How to Create a Playlist',
+      'description':
+          '1. Go to your Library.\n2. Tap "Create Playlist".\n3. Add songs from your favorites or search.',
+    },
+    {
+      'title': 'How to Use the Search Feature',
+      'description':
+          '1. Tap the search icon.\n2. Type the song, album, or artist.\n3. Select from the results to play instantly.',
+    },
+    {
+      'title': 'Account Settings',
+      'description':
+          '1. Tap on your profile.\n2. Go to Settings.\n3. Update email, password, or preferences.',
+    },
+    // Add more topics here
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,6 +51,45 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
+        ),
+      ),
+      body: ListView.builder(
+        padding: EdgeInsets.all(16),
+        itemCount: _helpTopics.length,
+        itemBuilder: (context, index) {
+          final topic = _helpTopics[index];
+          return _buildHelpCard(topic['title']!, topic['description']!);
+        },
+      ),
+    );
+  }
+
+  // Helper widget to build each card
+  Widget _buildHelpCard(String title, String description) {
+    return Card(
+      color: Colors.grey[900],
+      margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: TextStyle(color: Colors.grey[300], fontSize: 14),
+            ),
+          ],
         ),
       ),
     );
