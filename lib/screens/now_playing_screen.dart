@@ -347,8 +347,8 @@ class NowPlayingScreen extends StatelessWidget {
 
           TextButton(
             onPressed: () {
-              controller.removeSong(songTitle); // 🔥 DELETE
-              Get.back(); // 🔥 CLOSE DIALOG
+              controller.removeSong(songTitle);
+              Get.back();
             },
             child: const Text(
               'Delete',

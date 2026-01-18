@@ -7,7 +7,7 @@ class ApiResponse<T> {
   final int? statusCode;
   final Map<String, dynamic>? errors;
 
-  ApiResponse({
+  const ApiResponse({
     required this.success,
     this.data,
     this.message,

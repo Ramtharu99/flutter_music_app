@@ -10,7 +10,7 @@ class User {
   final bool isPremium;
   final DateTime? createdAt;
 
-  User({
+  const User({
     required this.id,
     required this.email,
     this.firstName,

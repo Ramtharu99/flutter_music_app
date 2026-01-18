@@ -1,5 +1,3 @@
-/// Song Model
-/// Data model for songs throughout the app.
 library;
 
 class Song {
@@ -8,7 +6,7 @@ class Song {
   final String artist;
   final String url;
   final String imageUrl;
-  final int? duration; // in seconds
+  final int? duration;
   final String? album;
   final String? genre;
   final bool isDownloaded;
