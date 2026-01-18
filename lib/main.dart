@@ -11,11 +11,6 @@ import 'package:music_app/utils/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
-  /*await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.example.musicapp.channel.audio',
-    androidNotificationChannelName: 'Music app',
-    androidNotificationOngoing: true,
-  );*/
 
   Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
