@@ -125,7 +125,12 @@ class _TunerScreenState extends State<TunerScreen> {
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.all(8),
-          child: Image.asset('assets/images/logo.png'),
+          child: Image.asset(
+            'assets/images/logo.png',
+            height: 80,
+            width: 80,
+            fit: BoxFit.cover,
+          ),
         ),
         title: Obx(() {
           if (_connectivityService.isOffline) {
