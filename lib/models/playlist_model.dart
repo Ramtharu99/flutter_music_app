@@ -1,5 +1,3 @@
-/// Playlist Model
-/// Data model for playlists.
 library;
 
 import 'song_model.dart';

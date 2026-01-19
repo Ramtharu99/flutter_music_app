@@ -229,7 +229,6 @@ class _TunerScreenState extends State<TunerScreen> {
                     ],
 
                     if (selectedChip == 'All') ...[
-                      // Playlist section
                       _sectionTitle(
                         'Playlist',
                         onMoreTap: () => Get.to(() => PlaylistScreen()),
@@ -258,11 +257,10 @@ class _TunerScreenState extends State<TunerScreen> {
                                     )
                                     .toList()
                               : [
-                                  // Fallback cards when no API data
                                   MusicCard(
                                     image: 'assets/images/logo.png',
-                                    title: 'Sample Song',
-                                    artist: 'Artist Name',
+                                    title: 'Unknown Song',
+                                    artist: 'Unknown Artist',
                                   ),
                                 ],
                         ),
@@ -270,7 +268,6 @@ class _TunerScreenState extends State<TunerScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Quick picks section
                       _sectionTitle(
                         'Quick picks',
                         onMoreTap: () => Get.to(() => SongsListScreen()),
