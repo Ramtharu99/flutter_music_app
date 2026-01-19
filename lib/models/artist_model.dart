@@ -1,5 +1,3 @@
-library;
-
 class Artist {
   final String id;
   final String name;

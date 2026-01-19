@@ -1,8 +1,3 @@
-/// Download Controller
-/// Manages downloaded songs for offline playback.
-/// Works with OfflineStorageService for persistence.
-library;
-
 import 'package:get/get.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/services/offline_storage_service.dart';
@@ -17,7 +12,9 @@ class DownloadController extends GetxController {
 
   // Getters
   List<Song> get downloadedSongs => _downloadedSongs;
+
   bool get isDownloading => _isDownloading.value;
+
   String get currentDownloadId => _currentDownloadId.value;
 
   @override

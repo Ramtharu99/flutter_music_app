@@ -9,7 +9,9 @@ import 'package:music_app/models/user_model.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
+
   factory ApiService() => _instance;
+
   ApiService._internal();
 
   final ApiClient _client = ApiClient();
@@ -21,10 +23,7 @@ class ApiService {
     try {
       final response = await _client.post<Map<String, dynamic>>(
         ApiConfig.login,
-        body: {
-          'email': email,
-          'password': password,
-        },
+        body: {'email': email, 'password': password},
       );
 
       if (response.success && response.data != null) {
@@ -39,7 +38,7 @@ class ApiService {
         // Parse user
         final userData = response.data!['user'] ?? response.data;
         final user = User.fromJson(userData);
-        
+
         return ApiResponse.success(user, message: response.message);
       }
 
@@ -52,20 +51,14 @@ class ApiService {
 
   /// Register a new user
   Future<ApiResponse<User>> register({
-    required String firstName,
-    required String lastName,
+    required String name,
     required String email,
     required String password,
   }) async {
     try {
       final response = await _client.post<Map<String, dynamic>>(
         ApiConfig.register,
-        body: {
-          'first_name': firstName,
-          'last_name': lastName,
-          'email': email,
-          'password': password,
-        },
+        body: {'name': name, 'email': email, 'password': password},
       );
 
       if (response.success && response.data != null) {
@@ -76,7 +69,7 @@ class ApiService {
 
         final userData = response.data!['user'] ?? response.data;
         final user = User.fromJson(userData);
-        
+
         return ApiResponse.success(user, message: response.message);
       }
 
@@ -131,10 +124,10 @@ class ApiService {
       );
 
       if (response.success && response.data != null) {
-        final List<dynamic> songsData = response.data is List 
-            ? response.data 
+        final List<dynamic> songsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final songs = songsData.map((json) => Song.fromJson(json)).toList();
         return ApiResponse.success(songs);
       }
@@ -152,15 +145,17 @@ class ApiService {
       final response = await _client.get<dynamic>(ApiConfig.featuredSongs);
 
       if (response.success && response.data != null) {
-        final List<dynamic> songsData = response.data is List 
-            ? response.data 
+        final List<dynamic> songsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final songs = songsData.map((json) => Song.fromJson(json)).toList();
         return ApiResponse.success(songs);
       }
 
-      return ApiResponse.error(response.message ?? 'Failed to load featured songs');
+      return ApiResponse.error(
+        response.message ?? 'Failed to load featured songs',
+      );
     } catch (e) {
       debugPrint('Get featured songs error: $e');
       return ApiResponse.error(e.toString());
@@ -173,15 +168,17 @@ class ApiService {
       final response = await _client.get<dynamic>(ApiConfig.trendingSongs);
 
       if (response.success && response.data != null) {
-        final List<dynamic> songsData = response.data is List 
-            ? response.data 
+        final List<dynamic> songsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final songs = songsData.map((json) => Song.fromJson(json)).toList();
         return ApiResponse.success(songs);
       }
 
-      return ApiResponse.error(response.message ?? 'Failed to load trending songs');
+      return ApiResponse.error(
+        response.message ?? 'Failed to load trending songs',
+      );
     } catch (e) {
       debugPrint('Get trending songs error: $e');
       return ApiResponse.error(e.toString());
@@ -197,10 +194,10 @@ class ApiService {
       );
 
       if (response.success && response.data != null) {
-        final List<dynamic> songsData = response.data is List 
-            ? response.data 
+        final List<dynamic> songsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final songs = songsData.map((json) => Song.fromJson(json)).toList();
         return ApiResponse.success(songs);
       }
@@ -218,10 +215,10 @@ class ApiService {
       final response = await _client.get<dynamic>('${ApiConfig.songById}/$id');
 
       if (response.success && response.data != null) {
-        final songData = response.data is Map 
-            ? response.data 
+        final songData = response.data is Map
+            ? response.data
             : response.data['data'];
-        
+
         final song = Song.fromJson(songData);
         return ApiResponse.success(song);
       }
@@ -243,10 +240,10 @@ class ApiService {
       final response = await _client.get<dynamic>(ApiConfig.playlists);
 
       if (response.success && response.data != null) {
-        final List<dynamic> playlistsData = response.data is List 
-            ? response.data 
+        final List<dynamic> playlistsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final playlists = playlistsData
             .map((json) => Playlist.fromJson(json))
             .toList();
@@ -261,21 +258,21 @@ class ApiService {
   }
 
   /// Create a new playlist
-  Future<ApiResponse<Playlist>> createPlaylist(String name, {String? description}) async {
+  Future<ApiResponse<Playlist>> createPlaylist(
+    String name, {
+    String? description,
+  }) async {
     try {
       final response = await _client.post<dynamic>(
         ApiConfig.createPlaylist,
-        body: {
-          'name': name,
-          'description': description,
-        },
+        body: {'name': name, 'description': description},
       );
 
       if (response.success && response.data != null) {
-        final playlistData = response.data is Map 
-            ? response.data 
+        final playlistData = response.data is Map
+            ? response.data
             : response.data['data'];
-        
+
         final playlist = Playlist.fromJson(playlistData);
         return ApiResponse.success(playlist, message: 'Playlist created');
       }
@@ -288,17 +285,20 @@ class ApiService {
   }
 
   /// Add song to playlist
-  Future<ApiResponse<bool>> addToPlaylist(String playlistId, String songId) async {
+  Future<ApiResponse<bool>> addToPlaylist(
+    String playlistId,
+    String songId,
+  ) async {
     try {
       final response = await _client.post<dynamic>(
         ApiConfig.addToPlaylist,
-        body: {
-          'playlist_id': playlistId,
-          'song_id': songId,
-        },
+        body: {'playlist_id': playlistId, 'song_id': songId},
       );
 
-      return ApiResponse.success(true, message: response.message ?? 'Song added to playlist');
+      return ApiResponse.success(
+        true,
+        message: response.message ?? 'Song added to playlist',
+      );
     } catch (e) {
       debugPrint('Add to playlist error: $e');
       return ApiResponse.error(e.toString());
@@ -315,11 +315,13 @@ class ApiService {
       final response = await _client.get<dynamic>(ApiConfig.artists);
 
       if (response.success && response.data != null) {
-        final List<dynamic> artistsData = response.data is List 
-            ? response.data 
+        final List<dynamic> artistsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
-        final artists = artistsData.map((json) => Artist.fromJson(json)).toList();
+
+        final artists = artistsData
+            .map((json) => Artist.fromJson(json))
+            .toList();
         return ApiResponse.success(artists);
       }
 
@@ -338,15 +340,17 @@ class ApiService {
       );
 
       if (response.success && response.data != null) {
-        final List<dynamic> songsData = response.data is List 
-            ? response.data 
+        final List<dynamic> songsData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final songs = songsData.map((json) => Song.fromJson(json)).toList();
         return ApiResponse.success(songs);
       }
 
-      return ApiResponse.error(response.message ?? 'Failed to load artist songs');
+      return ApiResponse.error(
+        response.message ?? 'Failed to load artist songs',
+      );
     } catch (e) {
       debugPrint('Get artist songs error: $e');
       return ApiResponse.error(e.toString());
@@ -363,10 +367,10 @@ class ApiService {
       final response = await _client.get<dynamic>(ApiConfig.profile);
 
       if (response.success && response.data != null) {
-        final userData = response.data is Map 
-            ? response.data 
+        final userData = response.data is Map
+            ? response.data
             : response.data['data'];
-        
+
         final user = User.fromJson(userData);
         return ApiResponse.success(user);
       }
@@ -395,10 +399,10 @@ class ApiService {
       );
 
       if (response.success && response.data != null) {
-        final userData = response.data is Map 
-            ? response.data 
+        final userData = response.data is Map
+            ? response.data
             : response.data['data'];
-        
+
         final user = User.fromJson(userData);
         return ApiResponse.success(user, message: 'Profile updated');
       }
@@ -420,10 +424,10 @@ class ApiService {
       final response = await _client.get<dynamic>(ApiConfig.categories);
 
       if (response.success && response.data != null) {
-        final List<dynamic> categoriesData = response.data is List 
-            ? response.data 
+        final List<dynamic> categoriesData = response.data is List
+            ? response.data
             : response.data['data'] ?? [];
-        
+
         final categories = categoriesData
             .map((json) => Map<String, dynamic>.from(json))
             .toList();

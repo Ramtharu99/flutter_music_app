@@ -1,10 +1,3 @@
-/// Auth Controller
-/// Handles authentication state with offline support.
-/// - Stores user credentials locally for offline access
-/// - Auto-navigates to home if already logged in (even offline)
-/// - Uses API for login when online
-library;
-
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -42,7 +35,6 @@ class AuthController extends GetxController {
     _loadInitialState();
   }
 
-  /// Load saved state from storage
   Future<void> _loadInitialState() async {
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -58,13 +50,11 @@ class AuthController extends GetxController {
     debugPrint('   - User: ${_currentUser.value?.email ?? 'None'}');
   }
 
-  /// Set first time done (after onboarding/payment)
   void setFirstTimeDone() {
     _isFirstTime.value = false;
     _storage.write('isFirstTime', false);
   }
 
-  /// Login with email and password
   Future<bool> login({required String email, required String password}) async {
     _isLoading.value = true;
     _errorMessage.value = '';
@@ -80,7 +70,7 @@ class AuthController extends GetxController {
           _currentUser.value = savedUser;
           _isLoggedIn.value = true;
           _storage.write('isLoggedIn', true);
-          debugPrint('✅ Offline login successful');
+          debugPrint('Offline login successful');
           return true;
         } else {
           _errorMessage.value =
@@ -89,13 +79,11 @@ class AuthController extends GetxController {
         }
       }
 
-      // Dummy credentials for testing
       if (email == 'test@example.com' && password == 'test@123') {
         final dummyUser = User(
           id: '1',
           email: email,
-          firstName: 'Test',
-          lastName: 'User',
+          name: 'Test',
           profileImage: null,
           phone: '+1234567890',
           isPremium: true,
@@ -104,7 +92,7 @@ class AuthController extends GetxController {
         _isLoggedIn.value = true;
         _storage.write('isLoggedIn', true);
         await _offlineStorage.saveUser(dummyUser);
-        debugPrint('✅ Test login successful with dummy credentials');
+        debugPrint('Test login successful with dummy credentials');
         return true;
       }
 
@@ -121,14 +109,14 @@ class AuthController extends GetxController {
 
         await _offlineStorage.saveUser(response.data!);
 
-        debugPrint('✅ Online login successful');
+        debugPrint('Online login successful');
         return true;
       } else {
         _errorMessage.value = response.message ?? 'Login failed';
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Login error: $e');
+      debugPrint('Login error: $e');
       _errorMessage.value = 'An error occurred. Please try again.';
       return false;
     } finally {
@@ -136,8 +124,6 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Register new user with ID only - stores ID and returns success
-  /// User then navigates to sign in screen to login with same credentials
   Future<bool> registerWithId({required String id}) async {
     _isLoading.value = true;
     _errorMessage.value = '';
@@ -147,10 +133,10 @@ class AuthController extends GetxController {
       _storage.write('signupId', id);
       _storage.write('hasSignedUp', true);
 
-      debugPrint('✅ ID stored for signup: $id');
+      debugPrint('ID stored for signup: $id');
       return true;
     } catch (e) {
-      debugPrint('❌ Signup error: $e');
+      debugPrint('Signup error: $e');
       _errorMessage.value = 'An error occurred. Please try again.';
       return false;
     } finally {
@@ -160,8 +146,7 @@ class AuthController extends GetxController {
 
   /// Register new user
   Future<bool> register({
-    required String firstName,
-    required String lastName,
+    required String name,
     required String email,
     required String password,
   }) async {
@@ -177,8 +162,7 @@ class AuthController extends GetxController {
       }
 
       final response = await _apiService.register(
-        firstName: firstName,
-        lastName: lastName,
+        name: name,
         email: email,
         password: password,
       );
@@ -191,14 +175,14 @@ class AuthController extends GetxController {
         // Save user for offline access
         await _offlineStorage.saveUser(response.data!);
 
-        debugPrint('✅ Registration successful');
+        debugPrint('Registration successful');
         return true;
       } else {
         _errorMessage.value = response.message ?? 'Registration failed';
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Registration error: $e');
+      debugPrint('Registration error: $e');
       _errorMessage.value = 'An error occurred. Please try again.';
       return false;
     } finally {
@@ -262,14 +246,13 @@ class AuthController extends GetxController {
     await _offlineStorage.clearUser();
 
     _isLoading.value = false;
-    debugPrint('✅ Logged out');
+    debugPrint('Logged out');
   }
 
-  /// Quick login for demo/testing (skip API)
   void loginOffline() {
     _isLoggedIn.value = true;
     _storage.write('isLoggedIn', true);
-    debugPrint('✅ Quick offline login');
+    debugPrint('Quick offline login');
   }
 
   /// Update user profile locally

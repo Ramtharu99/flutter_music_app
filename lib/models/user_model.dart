@@ -3,8 +3,7 @@ library;
 class User {
   final String id;
   final String email;
-  final String? firstName;
-  final String? lastName;
+  final String? name;
   final String? profileImage;
   final String? phone;
   final bool isPremium;
@@ -13,8 +12,7 @@ class User {
   const User({
     required this.id,
     required this.email,
-    this.firstName,
-    this.lastName,
+    this.name,
     this.profileImage,
     this.phone,
     this.isPremium = false,
@@ -22,16 +20,15 @@ class User {
   });
 
   String get fullName {
-    if (firstName == null && lastName == null) return email.split('@').first;
-    return '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    if (name == null) return email.split('@').first;
+    return (name ?? '').trim();
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id']?.toString() ?? '',
       email: json['email'] ?? '',
-      firstName: json['first_name'] ?? json['firstName'],
-      lastName: json['last_name'] ?? json['lastName'],
+      name: json['name'] ?? json['name'],
       profileImage: json['profile_image'] ?? json['avatar'],
       phone: json['phone'],
       isPremium: json['is_premium'] ?? json['isPremium'] ?? false,
@@ -45,8 +42,7 @@ class User {
     return {
       'id': id,
       'email': email,
-      'first_name': firstName,
-      'last_name': lastName,
+      'name': name,
       'profile_image': profileImage,
       'phone': phone,
       'is_premium': isPremium,
@@ -67,8 +63,7 @@ class User {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
-      firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
+      name: firstName ?? name,
       profileImage: profileImage ?? this.profileImage,
       phone: phone ?? this.phone,
       isPremium: isPremium ?? this.isPremium,

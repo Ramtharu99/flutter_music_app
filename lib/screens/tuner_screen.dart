@@ -1,11 +1,3 @@
-/// Tuner Screen (Home Screen)
-/// Main screen that shows:
-/// - Online: Fetches songs from API
-/// - Offline: Shows downloaded/offline songs only
-///
-/// Uses ApiService for all API calls and OfflineStorageService for offline data.
-library;
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/download_controller.dart';
@@ -70,17 +62,14 @@ class _TunerScreenState extends State<TunerScreen> {
     offlineSongs = _offlineStorage.getDownloadedSongs();
 
     if (_connectivityService.isOnline) {
-      // Online: Fetch from API
       await _loadOnlineData();
     } else {
-      // Offline: Use cached data
       _loadOfflineData();
     }
 
     setState(() => isLoading = false);
   }
 
-  /// Load data from API when online
   Future<void> _loadOnlineData() async {
     try {
       // Fetch songs from API
@@ -109,7 +98,6 @@ class _TunerScreenState extends State<TunerScreen> {
     featuredSongs = songs.take(5).toList();
 
     if (songs.isEmpty && offlineSongs.isEmpty) {
-      // If no data at all, show a message
       setState(() {
         selectedChip = 'Offline';
       });

@@ -1,14 +1,14 @@
 library;
 
 class ApiConfig {
-  static const String baseUrl = 'https://api.yourserver.com/v1';
+  static const String baseUrl = 'https://music-api-qhag.onrender.com/api/v1';
 
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 
-  static const String login = '/auth/login';
-  static const String register = '/auth/register';
-  static const String logout = '/auth/logout';
+  static const String login = '/login';
+  static const String register = '/register';
+  static const String logout = '/logout';
   static const String forgotPassword = '/auth/forgot-password';
   static const String refreshToken = '/auth/refresh';
 

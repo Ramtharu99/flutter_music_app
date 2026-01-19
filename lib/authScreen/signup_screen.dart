@@ -1,7 +1,3 @@
-/// Sign Up Screen
-/// Handles new user registration with API integration.
-library;
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/authScreen/sign_in_screen.dart';
@@ -18,8 +14,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController _firstName = TextEditingController();
-  final TextEditingController _lastName = TextEditingController();
+  final TextEditingController _name = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPassword = TextEditingController();
@@ -31,8 +26,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _firstName.dispose();
-    _lastName.dispose();
+    _name.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPassword.dispose();
@@ -94,23 +88,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 CustomTextField(
                   labelText: 'First Name',
                   prefixIcon: Icons.person_outline,
-                  controller: _firstName,
+                  controller: _name,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Enter your first name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                CustomTextField(
-                  labelText: 'Last Name',
-                  prefixIcon: Icons.person_outline,
-                  controller: _lastName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your last name';
+                      return 'Enter your name';
                     }
                     return null;
                   },
@@ -268,8 +249,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final success = await _authController.register(
-      firstName: _firstName.text.trim(),
-      lastName: _lastName.text.trim(),
+      name: _name.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
