@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:music_app/controllers/auth_controller.dart';
+import 'package:music_app/services/api_service.dart';
 import 'package:music_app/utils/app_colors.dart';
 
 class ProfileImage extends StatefulWidget {
@@ -15,6 +17,9 @@ class ProfileImage extends StatefulWidget {
 class _ProfileImageState extends State<ProfileImage> {
   File? _imageFile; // Stores picked image
   final ImagePicker _picker = ImagePicker();
+  final AuthController _authController = Get.find<AuthController>();
+  final ApiService _apiService = ApiService();
+  bool _isUploading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -22,20 +27,30 @@ class _ProfileImageState extends State<ProfileImage> {
       child: Stack(
         children: [
           // Profile picture
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(width: 2, color: AppColors.primaryColor),
-              image: DecorationImage(
-                image: _imageFile != null
-                    ? FileImage(_imageFile!) as ImageProvider
-                    : AssetImage('assets/images/avatar.jpg'),
-                fit: BoxFit.cover,
+          Obx(() {
+            final user = _authController.currentUser;
+            final imageProvider = _imageFile != null
+                ? FileImage(_imageFile!) as ImageProvider
+                : (user?.profileImage != null && user!.profileImage!.isNotEmpty)
+                ? NetworkImage(user.profileImage!) as ImageProvider
+                : null;
+
+            return Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(width: 2, color: AppColors.primaryColor),
+                image: imageProvider != null
+                    ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
+                    : null,
+                color: Colors.grey.shade800,
               ),
-            ),
-          ),
+              child: imageProvider == null
+                  ? Icon(Icons.person, size: 50, color: Colors.grey.shade400)
+                  : null,
+            );
+          }),
 
           // Camera icon
           Positioned(
@@ -56,7 +71,16 @@ class _ProfileImageState extends State<ProfileImage> {
                     ),
                   ],
                 ),
-                child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                child: _isUploading
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(Icons.camera_alt, color: Colors.white, size: 20),
               ),
             ),
           ),
@@ -197,10 +221,62 @@ class _ProfileImageState extends State<ProfileImage> {
         setState(() {
           _imageFile = File(pickedFile.path);
         });
+        // Upload the image
+        await _uploadProfileImage(pickedFile.path);
       }
     } catch (e) {
       debugPrint("Image picking error: $e");
       Get.snackbar('Error', 'Failed to pick image');
+    }
+  }
+
+  // Upload profile image to server
+  Future<void> _uploadProfileImage(String imagePath) async {
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final response = await _apiService.uploadProfileImage(imagePath);
+
+      if (response.success && response.data != null) {
+        // Update the current user in auth controller
+        _authController.updateCurrentUser(response.data!);
+        Get.snackbar(
+          'Success',
+          'Profile image updated successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          response.message ?? 'Failed to upload image',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        // Reset the image
+        setState(() {
+          _imageFile = null;
+        });
+      }
+    } catch (e) {
+      debugPrint('Upload error: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to upload image: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      // Reset the image
+      setState(() {
+        _imageFile = null;
+      });
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
     }
   }
 }

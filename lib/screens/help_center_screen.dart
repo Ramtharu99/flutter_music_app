@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:music_app/services/connectivity_service.dart';
+import 'package:music_app/utils/app_colors.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
@@ -9,7 +11,15 @@ class HelpCenterScreen extends StatefulWidget {
 }
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
-  // Example list of help topics
+  final ConnectivityService _connectivityService =
+      Get.find<ConnectivityService>();
+
+  Future<void> _onRefresh() async {
+    if (_connectivityService.isOffline) return;
+
+    Future.delayed(const Duration(milliseconds: 500));
+  }
+
   final List<Map<String, String>> _helpTopics = [
     {
       'title': 'How to Download Songs',
@@ -53,13 +63,19 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: _helpTopics.length,
-        itemBuilder: (context, index) {
-          final topic = _helpTopics[index];
-          return _buildHelpCard(topic['title']!, topic['description']!);
-        },
+      body: RefreshIndicator(
+        color: AppColors.primaryColor,
+        backgroundColor: Colors.black,
+        onRefresh: _onRefresh,
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(16),
+          itemCount: _helpTopics.length,
+          itemBuilder: (context, index) {
+            final topic = _helpTopics[index];
+            return _buildHelpCard(topic['title']!, topic['description']!);
+          },
+        ),
       ),
     );
   }

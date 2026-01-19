@@ -14,10 +14,11 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController _name = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPassword = TextEditingController();
+  final TextEditingController _password_confirmation = TextEditingController();
+  final TextEditingController _phone = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final AuthController _authController = Get.find<AuthController>();
@@ -26,10 +27,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _name.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPassword.dispose();
+    _password_confirmation.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -86,9 +88,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 }),
 
                 CustomTextField(
-                  labelText: 'First Name',
+                  labelText: 'Name',
                   prefixIcon: Icons.person_outline,
-                  controller: _name,
+                  controller: _nameController,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Enter your name';
@@ -136,13 +138,27 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelText: 'Confirm Password',
                   prefixIcon: Icons.lock_outline,
                   isPassword: true,
-                  controller: _confirmPassword,
+                  controller: _password_confirmation,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Confirm your password';
                     }
                     if (value != _passwordController.text) {
                       return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 12),
+                CustomTextField(
+                  labelText: 'Phone',
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.phone,
+                  controller: _phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Enter your phone number';
                     }
                     return null;
                   },
@@ -249,9 +265,10 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final success = await _authController.register(
-      name: _name.text.trim(),
+      name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      phone: _phone.text.trim(),
     );
 
     if (success) {

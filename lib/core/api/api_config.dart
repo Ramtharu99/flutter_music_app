@@ -9,12 +9,13 @@ class ApiConfig {
   static const String login = '/login';
   static const String register = '/register';
   static const String logout = '/logout';
-  static const String forgotPassword = '/auth/forgot-password';
-  static const String refreshToken = '/auth/refresh';
+  static const String forgotPassword = '/forgot-password';
+  static const String refreshToken = '/refresh';
 
   // User
-  static const String profile = '/user/profile';
-  static const String updateProfile = '/user/update';
+  static const String profile = '/me';
+  static const String updateProfile = '/update-profile';
+  static const String uploadProfileImage = '/upload-profile';
 
   // Songs
   static const String songs = '/songs';

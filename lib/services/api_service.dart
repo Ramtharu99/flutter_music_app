@@ -54,11 +54,18 @@ class ApiService {
     required String name,
     required String email,
     required String password,
+    required String phone,
   }) async {
     try {
       final response = await _client.post<Map<String, dynamic>>(
         ApiConfig.register,
-        body: {'name': name, 'email': email, 'password': password},
+        body: {
+          'name': name,
+          'email': email,
+          'password': password,
+          'password_confirmation': password,
+          'phone': phone,
+        },
       );
 
       if (response.success && response.data != null) {
@@ -382,19 +389,43 @@ class ApiService {
     }
   }
 
+  /// Get user by ID
+  Future<ApiResponse<User>> getUserById(String userId) async {
+    try {
+      final response = await _client.get<dynamic>(
+        '${ApiConfig.profile}/$userId',
+      );
+
+      if (response.success && response.data != null) {
+        final userData = response.data is Map
+            ? response.data
+            : response.data['data'];
+
+        final user = User.fromJson(userData);
+        return ApiResponse.success(user);
+      }
+
+      return ApiResponse.error(response.message ?? 'Failed to load user');
+    } catch (e) {
+      debugPrint('Get user by ID error: $e');
+      return ApiResponse.error(e.toString());
+    }
+  }
+
   /// Update user profile
   Future<ApiResponse<User>> updateProfile({
-    String? firstName,
-    String? lastName,
+    String? name,
     String? phone,
+    String? email,
   }) async {
     try {
       final response = await _client.put<dynamic>(
         ApiConfig.updateProfile,
         body: {
-          if (firstName != null) 'first_name': firstName,
-          if (lastName != null) 'last_name': lastName,
+          if (name != null) 'first_name': name,
           if (phone != null) 'phone': phone,
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
         },
       );
 
@@ -410,6 +441,31 @@ class ApiService {
       return ApiResponse.error(response.message ?? 'Failed to update profile');
     } catch (e) {
       debugPrint('Update profile error: $e');
+      return ApiResponse.error(e.toString());
+    }
+  }
+
+  /// Upload profile image
+  Future<ApiResponse<User>> uploadProfileImage(String imagePath) async {
+    try {
+      final response = await _client.uploadFile<dynamic>(
+        ApiConfig.uploadProfileImage,
+        imagePath,
+        fileFieldName: 'profile_image',
+      );
+
+      if (response.success && response.data != null) {
+        final userData = response.data is Map
+            ? response.data
+            : response.data['data'];
+
+        final user = User.fromJson(userData);
+        return ApiResponse.success(user, message: 'Profile image updated');
+      }
+
+      return ApiResponse.error(response.message ?? 'Failed to upload image');
+    } catch (e) {
+      debugPrint('Upload profile image error: $e');
       return ApiResponse.error(e.toString());
     }
   }

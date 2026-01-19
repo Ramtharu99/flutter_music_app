@@ -1,5 +1,3 @@
-library;
-
 class User {
   final String id;
   final String email;
@@ -53,8 +51,7 @@ class User {
   User copyWith({
     String? id,
     String? email,
-    String? firstName,
-    String? lastName,
+    String? name,
     String? profileImage,
     String? phone,
     bool? isPremium,
@@ -63,7 +60,7 @@ class User {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
-      name: firstName ?? name,
+      name: name ?? name,
       profileImage: profileImage ?? this.profileImage,
       phone: phone ?? this.phone,
       isPremium: isPremium ?? this.isPremium,

@@ -149,6 +149,7 @@ class AuthController extends GetxController {
     required String name,
     required String email,
     required String password,
+    required String phone,
   }) async {
     _isLoading.value = true;
     _errorMessage.value = '';
@@ -165,6 +166,7 @@ class AuthController extends GetxController {
         name: name,
         email: email,
         password: password,
+        phone: phone,
       );
 
       if (response.success && response.data != null) {
@@ -235,8 +237,9 @@ class AuthController extends GetxController {
 
     try {
       await _apiService.logout();
-    } catch (_) {
+    } catch (e) {
       // Ignore API errors on logout
+      debugPrint('Error on logout: $e');
     }
 
     // Clear local state
@@ -259,5 +262,10 @@ class AuthController extends GetxController {
   void updateLocalUser(User user) {
     _currentUser.value = user;
     _offlineStorage.saveUser(user);
+  }
+
+  /// Update current user (alias for updateLocalUser)
+  void updateCurrentUser(User user) {
+    updateLocalUser(user);
   }
 }

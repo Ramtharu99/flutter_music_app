@@ -125,6 +125,73 @@ class ApiClient {
     );
   }
 
+  /// Upload file (multipart/form-data)
+  Future<ApiResponse<T>> uploadFile<T>(
+    String endpoint,
+    String filePath, {
+    String fileFieldName = 'file',
+    Map<String, String>? additionalFields,
+    T Function(dynamic json)? parser,
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}$endpoint');
+      final file = File(filePath);
+
+      if (!file.existsSync()) {
+        throw ApiException('File not found: $filePath');
+      }
+
+      // Create multipart request
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add headers
+      request.headers.addAll(_headers);
+      if (authToken != null) {
+        request.headers['Authorization'] = 'Bearer $authToken';
+      }
+
+      // Add file
+      request.files.add(
+        http.MultipartFile(
+          fileFieldName,
+          file.readAsBytes().asStream(),
+          file.lengthSync(),
+          filename: file.path.split('/').last,
+        ),
+      );
+
+      // Add additional fields
+      if (additionalFields != null) {
+        request.fields.addAll(additionalFields);
+      }
+
+      // Log request
+      debugPrint('┌──────────────────────────────────────────');
+      debugPrint('│ FILE UPLOAD REQUEST');
+      debugPrint('│ POST: $uri');
+      debugPrint('│ File: $filePath');
+      debugPrint('└──────────────────────────────────────────');
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      // Log response
+      _logResponse(response);
+
+      // Handle response
+      return _handleResponse<T>(response, parser);
+    } on SocketException {
+      throw NetworkException();
+    } on TimeoutException {
+      throw TimeoutException();
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Upload error: $e');
+    }
+  }
+
   // ============ CORE REQUEST METHOD ============
   Future<ApiResponse<T>> _request<T>({
     required String method,

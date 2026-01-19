@@ -156,6 +156,8 @@ class _TunerScreenState extends State<TunerScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadData,
+              color: AppColors.primaryColor,
+              backgroundColor: Colors.black,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
