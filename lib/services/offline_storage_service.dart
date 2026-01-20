@@ -1,8 +1,3 @@
-/// Offline Storage Service
-/// Handles local storage for offline functionality.
-/// Stores user credentials, downloaded songs, and cached data.
-library;
-
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -13,7 +8,9 @@ import 'package:music_app/models/user_model.dart';
 class OfflineStorageService {
   static final OfflineStorageService _instance =
       OfflineStorageService._internal();
+
   factory OfflineStorageService() => _instance;
+
   OfflineStorageService._internal();
 
   final GetStorage _storage = GetStorage();

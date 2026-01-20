@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:music_app/screens/account_screen.dart';
 import 'package:music_app/utils/app_colors.dart';
 
 class UpgradeScreen extends StatefulWidget {
@@ -19,6 +21,12 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         backgroundColor: Colors.black,
         title: const Text('Go Premium', style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () => Get.to(() => AccountScreen()),
+            icon: Icon(Icons.person, color: Colors.white),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

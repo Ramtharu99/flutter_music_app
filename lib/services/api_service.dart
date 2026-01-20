@@ -1,5 +1,7 @@
 import 'dart:math';
+
 import 'package:flutter/foundation.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:music_app/core/api/api_client.dart';
 import 'package:music_app/core/api/api_config.dart';
 import 'package:music_app/core/api/api_response.dart';
@@ -29,53 +31,35 @@ class ApiService {
       );
 
       if (response.success && response.data != null) {
-        debugPrint('✅ [API SERVICE] Login response received');
-        debugPrint('   - response.data type: ${response.data.runtimeType}');
-        debugPrint('   - response.data: ${response.data}');
+        debugPrint('[API SERVICE] Login response received');
 
-        // The server response has structure: {success, message, data: {user, token}}
-        // response.data is the entire response body
-        var tokenData = response.data;
-        String? token;
-        String? refreshToken;
-        Map<String, dynamic>? userData;
+        // Extract 'data' field from response
+        final data = response.data!['data'] as Map<String, dynamic>?;
+        if (data == null) return ApiResponse.error('No data field in response');
 
-        // Handle both possible response structures
-        if (tokenData is Map<String, dynamic>) {
-          if (tokenData.containsKey('data') && tokenData['data'] is Map) {
-            // Structure: {success, message, data: {user, token}}
-            token = tokenData['data']['token'];
-            refreshToken = tokenData['data']['refresh_token'];
-            userData = tokenData['data']['user'];
-          } else if (tokenData.containsKey('token')) {
-            // Direct structure
-            token = tokenData['token'];
-            refreshToken = tokenData['refresh_token'];
-            userData = tokenData['user'];
-          }
+        // Extract token and user
+        final token = data['token'] as String?;
+        final userData = data['user'] as Map<String, dynamic>?;
+
+        if (token == null) {
+          debugPrint('No token found in response');
+          return ApiResponse.error('Token not found');
+        }
+        _client.authToken = token;
+        debugPrint(
+          'Token assigned and saved: ${token.substring(0, min(20, token.length))}...',
+        );
+
+        debugPrint(
+          'Token in storage: ${GetStorage().read(ApiClient.tokenKey)}',
+        );
+
+        if (userData == null) {
+          return ApiResponse.error('User data not found in response');
         }
 
-        if (token != null) {
-          debugPrint(
-            '   - Token found: ${token.substring(0, min(20, token.length))}...',
-          );
-          _client.authToken = token;
-          debugPrint('   - ✅ Token assignment completed');
-        } else {
-          debugPrint('   - ❌ NO TOKEN FOUND in response!');
-        }
-
-        if (refreshToken != null) {
-          _client.refreshToken = refreshToken;
-        }
-
-        // Parse user
-        if (userData != null) {
-          final user = User.fromJson(userData);
-          return ApiResponse.success(user, message: response.message);
-        } else {
-          return ApiResponse.error('No user data in response');
-        }
+        final user = User.fromJson(userData);
+        return ApiResponse.success(user, message: response.message);
       }
 
       return ApiResponse.error(response.message ?? 'Login failed');
@@ -105,7 +89,7 @@ class ApiService {
       );
 
       if (response.success && response.data != null) {
-        debugPrint('✅ [API SERVICE] Register response received');
+        debugPrint('[API SERVICE] Register response received');
 
         // The server response has structure: {success, message, data: {user, token}}
         var tokenData = response.data;
@@ -115,16 +99,10 @@ class ApiService {
 
         // Handle both possible response structures
         if (tokenData is Map<String, dynamic>) {
-          if (tokenData.containsKey('data') && tokenData['data'] is Map) {
-            // Structure: {success, message, data: {user, token}}
-            token = tokenData['data']['token'];
-            refreshToken = tokenData['data']['refresh_token'];
-            userData = tokenData['data']['user'];
-          } else if (tokenData.containsKey('token')) {
-            // Direct structure
-            token = tokenData['token'];
-            refreshToken = tokenData['refresh_token'];
-            userData = tokenData['user'];
+          final dataMap = tokenData['data'];
+          if (dataMap != null && dataMap is Map<String, dynamic>) {
+            token = dataMap['token'];
+            userData = dataMap['user'];
           }
         }
 
@@ -133,10 +111,6 @@ class ApiService {
             '   - Token found: ${token.substring(0, min(20, token.length))}...',
           );
           _client.authToken = token;
-        }
-
-        if (refreshToken != null) {
-          _client.refreshToken = refreshToken;
         }
 
         if (userData != null) {

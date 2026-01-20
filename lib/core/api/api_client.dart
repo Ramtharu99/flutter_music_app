@@ -1,5 +1,3 @@
-library;
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -43,11 +41,11 @@ class ApiClient {
       if (token != null) {
         _storage.write(tokenKey, token);
         debugPrint(
-          '✅ Token saved: ${token.substring(0, min(20, token.length))}...',
+          'Token saved: ${token.substring(0, min(20, token.length))}...',
         );
       } else {
         _storage.remove(tokenKey);
-        debugPrint('✅ Token cleared');
+        debugPrint('Token cleared');
       }
     } catch (e) {
       debugPrint('Error writing token to storage: $e');
