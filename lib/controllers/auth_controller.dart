@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:music_app/core/api/api_client.dart';
 import 'package:music_app/models/user_model.dart';
 import 'package:music_app/services/api_service.dart';
 import 'package:music_app/services/connectivity_service.dart';
@@ -36,18 +37,46 @@ class AuthController extends GetxController {
   }
 
   Future<void> _loadInitialState() async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      debugPrint('\n═══════════════════════════════════════════════════');
+      debugPrint('🔄 [AUTH CONTROLLER] Initializing...');
+      debugPrint('═══════════════════════════════════════════════════');
 
-    _isFirstTime.value = _storage.read('isFirstTime') ?? true;
-    _isLoggedIn.value = _storage.read('isLoggedIn') ?? false;
+      // Load first time flag
+      _isFirstTime.value = _storage.read('isFirstTime') ?? true;
+      debugPrint('📱 First Time: ${_isFirstTime.value}');
 
-    // Load saved user
-    _currentUser.value = _offlineStorage.getUser();
+      // Load logged in flag
+      _isLoggedIn.value = _storage.read('isLoggedIn') ?? false;
+      debugPrint('✓ Logged In Flag: ${_isLoggedIn.value}');
 
-    debugPrint('📱 Auth State Loaded:');
-    debugPrint('   - First Time: ${_isFirstTime.value}');
-    debugPrint('   - Logged In: ${_isLoggedIn.value}');
-    debugPrint('   - User: ${_currentUser.value?.email ?? 'None'}');
+      // Try to load token from storage
+      final storedToken = _storage.read('auth_token');
+      debugPrint('🔑 Token in Storage: ${storedToken != null ? 'YES' : 'NO'}');
+      if (storedToken != null) {
+        ApiClient().authToken = storedToken;
+        debugPrint('✓ Token loaded into ApiClient');
+      }
+
+      // Load saved user
+      _currentUser.value = _offlineStorage.getUser();
+      if (_currentUser.value != null) {
+        debugPrint('✓ User loaded from offline storage');
+        debugPrint('  - Name: ${_currentUser.value?.fullName}');
+        debugPrint('  - Email: ${_currentUser.value?.email}');
+      }
+
+      // If logged in, fetch fresh profile from API
+      if (_isLoggedIn.value && storedToken != null) {
+        debugPrint('\n🌐 Fetching profile from API...');
+        await Future.delayed(const Duration(milliseconds: 500));
+        await fetchProfile();
+      }
+
+      debugPrint('═══════════════════════════════════════════════════\n');
+    } catch (e) {
+      debugPrint('❌ Error loading initial state: $e');
+    }
   }
 
   void setFirstTimeDone() {
@@ -80,8 +109,13 @@ class AuthController extends GetxController {
       }
 
       if (email == 'test@example.com' && password == 'test@123') {
+        // Store test token
+        final testToken = 'test_token_12345_dummy_token_for_testing';
+        ApiClient().authToken = testToken;
+        debugPrint('✅ Test token stored: $testToken');
+
         final dummyUser = User(
-          id: '1',
+          id: 1,
           email: email,
           name: 'Test',
           profileImage: null,
@@ -103,13 +137,23 @@ class AuthController extends GetxController {
       );
 
       if (response.success && response.data != null) {
-        _currentUser.value = response.data;
         _isLoggedIn.value = true;
         _storage.write('isLoggedIn', true);
 
-        await _offlineStorage.saveUser(response.data!);
+        // Add a small delay to ensure token is written to storage
+        await Future.delayed(const Duration(milliseconds: 500));
 
-        debugPrint('Online login successful');
+        // Verify token was stored - use multiple checks
+        final storedToken = ApiClient().authToken;
+        debugPrint('✅ [LOGIN SUCCESS] Token verification:');
+        debugPrint('   - Token exists: ${storedToken != null}');
+        if (storedToken != null) {
+          debugPrint('   - Token length: ${storedToken.length}');
+          debugPrint('   - isAuthenticated: ${ApiClient().isAuthenticated}');
+        }
+
+        // Now fetch profile with the stored token
+        await fetchProfile();
         return true;
       } else {
         _errorMessage.value = response.message ?? 'Login failed';
@@ -192,12 +236,91 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<void> fetchProfile({int retryCount = 0}) async {
+    debugPrint(
+      '\n🔐 [AUTH CONTROLLER] fetchProfile() called (attempt ${retryCount + 1})',
+    );
+
+    // Check token status
+    final token = ApiClient().authToken;
+    debugPrint('🔑 [TOKEN] Auth token status:');
+    if (token != null) {
+      debugPrint('   ✅ Token exists (${token.length} chars)');
+      final prefix = token.length > 20 ? token.substring(0, 20) : token;
+      debugPrint('   ✅ Token prefix: $prefix...');
+    } else {
+      debugPrint('   ❌ NO TOKEN FOUND');
+      debugPrint('   ❌ User is not authenticated!');
+
+      // If this is a retry, don't retry anymore
+      if (retryCount >= 2) {
+        debugPrint('❌ [FAILED] No token after retries');
+        return;
+      }
+
+      // Retry after a short delay
+      debugPrint('⏳ Retrying in 500ms...');
+      await Future.delayed(const Duration(milliseconds: 500));
+      return fetchProfile(retryCount: retryCount + 1);
+    }
+
+    try {
+      final ConnectivityService connectivityService =
+          Get.find<ConnectivityService>();
+
+      if (connectivityService.isOffline) {
+        debugPrint('⚠️  Offline mode: Loading from cache');
+        _currentUser.value = _offlineStorage.getUser();
+        return;
+      }
+
+      debugPrint('🌐 [API] Calling getProfile() from API service');
+      // Fetch user profile from /me endpoint
+      final response = await _apiService.getProfile();
+
+      debugPrint('📥 [API] getProfile() response received');
+      debugPrint('   - Success: ${response.success}');
+      debugPrint('   - Message: ${response.message}');
+
+      if (response.success && response.data != null) {
+        final user = response.data!;
+        _currentUser.value = user;
+        _isLoggedIn.value = true;
+        _storage.write('isLoggedIn', true);
+
+        // Save user locally for offline access
+        await _offlineStorage.saveUser(user);
+
+        debugPrint('✅ [SUCCESS] User profile fetched from API:');
+        debugPrint('   - ID: ${user.id}');
+        debugPrint('   - Name: ${user.fullName}');
+        debugPrint('   - Email: ${user.email}');
+        debugPrint('   - Phone: ${user.phone}');
+        debugPrint('   - Profile Image: ${user.profileImage}');
+        debugPrint('   - Premium: ${user.isPremium}');
+        debugPrint('   - Created: ${user.createdAt}');
+        debugPrint('   - Updated: ${user.createdAt}');
+      } else {
+        debugPrint('❌ [FAILED] Failed to fetch profile: ${response.message}');
+
+        // If 401, it might be a token issue - retry once
+        if (response.message?.contains('401') == true && retryCount < 1) {
+          debugPrint('⏳ Got 401 error, retrying after delay...');
+          await Future.delayed(const Duration(milliseconds: 500));
+          return fetchProfile(retryCount: retryCount + 1);
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [ERROR] Exception in fetchProfile: $e');
+      debugPrint('   Stack trace: ${StackTrace.current}');
+    }
+  }
+
   /// Get stored signup ID
   String? getSignupId() {
     return _storage.read('signupId');
   }
 
-  /// Check if user has signed up with ID
   bool hasSignedUp() {
     return _storage.read('hasSignedUp') ?? false;
   }
@@ -267,5 +390,206 @@ class AuthController extends GetxController {
   /// Update current user (alias for updateLocalUser)
   void updateCurrentUser(User user) {
     updateLocalUser(user);
+  }
+
+  /// Refresh user profile from server
+  Future<bool> refreshUserProfile() async {
+    try {
+      final ConnectivityService connectivityService =
+          Get.find<ConnectivityService>();
+
+      if (connectivityService.isOffline) {
+        debugPrint('⚠ Offline mode: Cannot refresh profile');
+        return false;
+      }
+
+      await fetchProfile();
+      return _currentUser.value != null;
+    } catch (e) {
+      debugPrint('✗ Failed to refresh profile: $e');
+      return false;
+    }
+  }
+
+  /// Get current logged-in user
+  User? getCurrentUser() {
+    return _currentUser.value;
+  }
+
+  /// Check if current user has required fields
+  bool hasCompleteProfile() {
+    final user = _currentUser.value;
+    if (user == null) return false;
+    return user.email.isNotEmpty &&
+        user.name != null &&
+        user.name!.isNotEmpty &&
+        user.phone != null &&
+        user.phone!.isNotEmpty;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ║                   PROFILE MANAGEMENT                            ║
+  // ═══════════════════════════════════════════════════════════════════
+
+  /// Update user profile
+  Future<bool> updateProfile({
+    String? name,
+    String? email,
+    String? phone,
+  }) async {
+    _isLoading.value = true;
+    _errorMessage.value = '';
+
+    try {
+      final connectivityService = Get.find<ConnectivityService>();
+
+      if (connectivityService.isOffline) {
+        _errorMessage.value = 'Internet connection required to update profile.';
+        return false;
+      }
+
+      final response = await _apiService.updateProfile(
+        name: name,
+        email: email,
+        phone: phone,
+      );
+
+      if (response.success && response.data != null) {
+        _currentUser.value = response.data;
+        await _offlineStorage.saveUser(response.data!);
+        debugPrint('✅ Profile updated successfully');
+        return true;
+      } else {
+        _errorMessage.value = response.message ?? 'Failed to update profile';
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Update profile error: $e');
+      _errorMessage.value = 'An error occurred. Please try again.';
+      return false;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// Upload profile image
+  Future<bool> uploadProfileImage(String imagePath) async {
+    _isLoading.value = true;
+    _errorMessage.value = '';
+
+    try {
+      final connectivityService = Get.find<ConnectivityService>();
+
+      if (connectivityService.isOffline) {
+        _errorMessage.value = 'Internet connection required to upload image.';
+        return false;
+      }
+
+      final response = await _apiService.uploadProfileImage(imagePath);
+
+      if (response.success && response.data != null) {
+        _currentUser.value = response.data;
+        await _offlineStorage.saveUser(response.data!);
+        debugPrint('✅ Profile image uploaded successfully');
+        return true;
+      } else {
+        _errorMessage.value = response.message ?? 'Failed to upload image';
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Upload profile image error: $e');
+      _errorMessage.value = 'An error occurred. Please try again.';
+      return false;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// Change password
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _isLoading.value = true;
+    _errorMessage.value = '';
+
+    try {
+      final connectivityService = Get.find<ConnectivityService>();
+
+      if (connectivityService.isOffline) {
+        _errorMessage.value =
+            'Internet connection required to change password.';
+        return false;
+      }
+
+      if (newPassword != confirmPassword) {
+        _errorMessage.value = 'New password and confirmation do not match.';
+        return false;
+      }
+
+      if (newPassword.length < 8) {
+        _errorMessage.value = 'Password must be at least 8 characters long.';
+        return false;
+      }
+
+      final response = await _apiService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+
+      if (response.success) {
+        debugPrint('✅ Password changed successfully');
+        return true;
+      } else {
+        _errorMessage.value = response.message ?? 'Failed to change password';
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Change password error: $e');
+      _errorMessage.value = 'An error occurred. Please try again.';
+      return false;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// Delete user account
+  Future<bool> deleteAccount() async {
+    _isLoading.value = true;
+    _errorMessage.value = '';
+
+    try {
+      final connectivityService = Get.find<ConnectivityService>();
+
+      if (connectivityService.isOffline) {
+        _errorMessage.value = 'Internet connection required to delete account.';
+        return false;
+      }
+
+      final response = await _apiService.deleteAccount();
+
+      if (response.success) {
+        // Clear local state
+        _currentUser.value = null;
+        _isLoggedIn.value = false;
+        _storage.write('isLoggedIn', false);
+        await _offlineStorage.clearUser();
+        ApiClient().clearTokens();
+
+        debugPrint('✅ Account deleted successfully');
+        return true;
+      } else {
+        _errorMessage.value = response.message ?? 'Failed to delete account';
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Delete account error: $e');
+      _errorMessage.value = 'An error occurred. Please try again.';
+      return false;
+    } finally {
+      _isLoading.value = false;
+    }
   }
 }

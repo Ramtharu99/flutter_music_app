@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/screens/account_screen.dart';
 
 class ClockScreen extends StatefulWidget {
@@ -55,7 +56,14 @@ class _ClockScreenState extends State<ClockScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () => Get.to(() => AccountScreen()),
+            onPressed: () async {
+              debugPrint(
+                '\n👤 [CLOCK SCREEN] Account icon tapped - Fetching user data',
+              );
+              final authController = Get.find<AuthController>();
+              await authController.fetchProfile();
+              Get.to(() => AccountScreen());
+            },
             icon: Icon(Icons.person, color: Colors.white),
           ),
         ],

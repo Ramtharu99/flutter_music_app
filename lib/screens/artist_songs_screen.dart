@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/music_controller.dart';
+import '../models/song_model.dart';
 
 class ArtistSongsScreen extends StatelessWidget {
   final String artist;
@@ -53,7 +54,13 @@ class ArtistSongsScreen extends StatelessWidget {
               style: TextStyle(color: Colors.grey.shade400),
             ),
             onTap: () {
-              MusicController.playPlaylist(songs: songs, startIndex: index);
+              final songObjects = songs
+                  .map((song) => Song.fromJson(song))
+                  .toList();
+              MusicController.playPlaylist(
+                songs: songObjects,
+                startIndex: index,
+              );
             },
           );
         },

@@ -120,8 +120,8 @@ class _SongsListScreenState extends State<SongsListScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: MusicListTile(
-                      image: song.imageUrl.isNotEmpty
-                          ? song.imageUrl
+                      image: song.coverImage.isNotEmpty
+                          ? song.coverImage
                           : 'assets/images/logo.png',
                       title: song.title,
                       subtitle: song.artist,
@@ -142,10 +142,10 @@ class _SongsListScreenState extends State<SongsListScreen> {
 
                         // Play the song
                         MusicController.playFromUrl(
-                          url: song.localPath ?? song.url,
+                          url: song.localPath ?? song.fileUrl!,
                           title: song.title,
                           artist: song.artist,
-                          imageUrl: song.imageUrl,
+                          imageUrl: song.coverImage,
                         );
                       },
                       onMoreTap: (position) {

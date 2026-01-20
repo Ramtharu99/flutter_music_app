@@ -3,6 +3,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:get_storage/get_storage.dart';
@@ -20,38 +21,71 @@ class ApiClient {
   ApiClient._internal();
 
   final http.Client _client = http.Client();
-  final GetStorage _storage = GetStorage();
 
   static const String tokenKey = 'auth_token';
   static const String refreshTokenKey = 'refresh_token';
   static const String userKey = 'user_data';
 
-  String? get authToken => _storage.read(tokenKey);
+  // Get the GetStorage instance - it's already initialized in main.dart
+  GetStorage get _storage => GetStorage();
 
-  set authToken(String? token) {
-    if (token != null) {
-      _storage.write(tokenKey, token);
-    } else {
-      _storage.remove(tokenKey);
+  String? get authToken {
+    try {
+      return _storage.read(tokenKey);
+    } catch (e) {
+      debugPrint('Error reading token from storage: $e');
+      return null;
     }
   }
 
-  String? get refreshToken => _storage.read(refreshTokenKey);
+  set authToken(String? token) {
+    try {
+      if (token != null) {
+        _storage.write(tokenKey, token);
+        debugPrint(
+          '✅ Token saved: ${token.substring(0, min(20, token.length))}...',
+        );
+      } else {
+        _storage.remove(tokenKey);
+        debugPrint('✅ Token cleared');
+      }
+    } catch (e) {
+      debugPrint('Error writing token to storage: $e');
+    }
+  }
+
+  String? get refreshToken {
+    try {
+      return _storage.read(refreshTokenKey);
+    } catch (e) {
+      debugPrint('Error reading refresh token from storage: $e');
+      return null;
+    }
+  }
 
   set refreshToken(String? token) {
-    if (token != null) {
-      _storage.write(refreshTokenKey, token);
-    } else {
-      _storage.remove(refreshTokenKey);
+    try {
+      if (token != null) {
+        _storage.write(refreshTokenKey, token);
+      } else {
+        _storage.remove(refreshTokenKey);
+      }
+    } catch (e) {
+      debugPrint('Error writing refresh token to storage: $e');
     }
   }
 
   bool get isAuthenticated => authToken != null;
 
   void clearTokens() {
-    _storage.remove(tokenKey);
-    _storage.remove(refreshTokenKey);
-    _storage.remove(userKey);
+    try {
+      _storage.remove(tokenKey);
+      _storage.remove(refreshTokenKey);
+      _storage.remove(userKey);
+      debugPrint('✅ All tokens cleared');
+    } catch (e) {
+      debugPrint('Error clearing tokens from storage: $e');
+    }
   }
 
   Map<String, String> get _headers {

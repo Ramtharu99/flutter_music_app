@@ -36,7 +36,7 @@ class DownloadController extends GetxController {
   /// Download a song (save to offline storage)
   Future<void> downloadSong(String title, {Song? song}) async {
     _isDownloading.value = true;
-    _currentDownloadId.value = song?.id ?? title;
+    _currentDownloadId.value = song?.id.toString() ?? title;
 
     try {
       // Simulate download delay
@@ -49,11 +49,16 @@ class DownloadController extends GetxController {
       } else {
         // Legacy support - create a basic song from title
         final basicSong = Song(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: DateTime.now().millisecondsSinceEpoch,
           title: title,
           artist: 'Unknown Artist',
-          url: '',
-          imageUrl: 'assets/images/logo.png',
+          fileUrl: '',
+          coverImage: 'assets/images/logo.png',
+          duration: 0,
+          price: '0.00',
+          description: '',
+          playsCount: 0,
+          isPurchased: false,
           isDownloaded: true,
         );
         await _offlineStorage.saveDownloadedSong(basicSong);
@@ -82,8 +87,10 @@ class DownloadController extends GetxController {
   }
 
   /// Check if a song is downloaded
-  bool isSongDownloaded(String songId) {
-    return _downloadedSongs.any((s) => s.id == songId);
+  bool isSongDownloaded(dynamic songId) {
+    return _downloadedSongs.any(
+      (s) => s.id == songId || s.id.toString() == songId.toString(),
+    );
   }
 
   /// Check if song title is downloaded (legacy)
@@ -92,7 +99,7 @@ class DownloadController extends GetxController {
   }
 
   /// Get downloaded song by ID
-  Song? getDownloadedSong(String songId) {
+  Song? getDownloadedSong(int songId) {
     try {
       return _downloadedSongs.firstWhere((s) => s.id == songId);
     } catch (_) {
@@ -103,7 +110,7 @@ class DownloadController extends GetxController {
   /// Clear all downloads
   Future<void> clearAllDownloads() async {
     for (final song in _downloadedSongs) {
-      await _offlineStorage.removeDownloadedSong(song.id);
+      await _offlineStorage.removeDownloadedSong(song.id.toString());
     }
     _downloadedSongs.clear();
     update();

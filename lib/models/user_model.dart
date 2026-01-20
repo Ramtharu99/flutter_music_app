@@ -1,11 +1,12 @@
 class User {
-  final String id;
+  final int id;
   final String email;
   final String? name;
   final String? profileImage;
   final String? phone;
   final bool isPremium;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const User({
     required this.id,
@@ -15,23 +16,31 @@ class User {
     this.phone,
     this.isPremium = false,
     this.createdAt,
+    this.updatedAt,
   });
 
   String get fullName {
-    if (name == null) return email.split('@').first;
+    if (name == null || name?.isEmpty == true) {
+      return email.split('@').first;
+    }
     return (name ?? '').trim();
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id']?.toString() ?? '',
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       email: json['email'] ?? '',
-      name: json['name'] ?? json['name'],
+      name: json['name']?.toString(),
       profileImage: json['profile_image'] ?? json['avatar'],
-      phone: json['phone'],
+      phone: json['phone']?.toString(),
       isPremium: json['is_premium'] ?? json['isPremium'] ?? false,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }
@@ -45,26 +54,29 @@ class User {
       'phone': phone,
       'is_premium': isPremium,
       'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
   User copyWith({
-    String? id,
+    int? id,
     String? email,
     String? name,
     String? profileImage,
     String? phone,
     bool? isPremium,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
-      name: name ?? name,
+      name: name ?? this.name,
       profileImage: profileImage ?? this.profileImage,
       phone: phone ?? this.phone,
       isPremium: isPremium ?? this.isPremium,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

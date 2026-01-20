@@ -3,26 +3,33 @@ library;
 class ApiConfig {
   static const String baseUrl = 'https://music-api-qhag.onrender.com/api/v1';
 
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration connectionTimeout = Duration(seconds: 60);
+  static const Duration receiveTimeout = Duration(seconds: 60);
 
   static const String login = '/login';
   static const String register = '/register';
   static const String logout = '/logout';
-  static const String forgotPassword = '/forgot-password';
-  static const String refreshToken = '/refresh';
+  static const String forgotPassword = '/change-password';
+  // static const String refreshToken = '/refresh';
 
   // User
   static const String profile = '/me';
   static const String updateProfile = '/update-profile';
   static const String uploadProfileImage = '/upload-profile';
+  static const String changePassword = '/change-password';
+  static const String deleteAccount = '/delete-account';
 
-  // Songs
-  static const String songs = '/songs';
-  static const String searchSongs = '/songs/search';
-  static const String songById = '/songs';
-  static const String featuredSongs = '/songs/featured';
-  static const String trendingSongs = '/songs/trending';
+  // Music
+  static const String music = '/music';
+  static const String musicById = '/music';
+  static const String musicPlay = '/music';
+  static const String searchSongs = '/music';
+  static const String songById = '/music';
+
+  // Purchases
+  static const String purchase = '/purchase';
+  static const String myPurchases = '/my-purchases';
+  static const String checkPurchase = '/check-purchase';
 
   // Playlists
   static const String playlists = '/playlists';

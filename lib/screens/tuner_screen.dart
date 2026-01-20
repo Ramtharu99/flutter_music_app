@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/models/song_model.dart';
@@ -147,7 +148,14 @@ class _TunerScreenState extends State<TunerScreen> {
             icon: const Icon(Icons.search, color: Colors.white),
           ),
           IconButton(
-            onPressed: () => Get.to(() => const AccountScreen()),
+            onPressed: () async {
+              debugPrint(
+                '\n👤 [TUNER SCREEN] Account icon tapped - Fetching user data',
+              );
+              final authController = Get.find<AuthController>();
+              await authController.fetchProfile();
+              Get.to(() => const AccountScreen());
+            },
             icon: const Icon(Icons.person, color: Colors.white),
           ),
         ],
@@ -232,15 +240,15 @@ class _TunerScreenState extends State<TunerScreen> {
                               ? featuredSongs
                                     .map(
                                       (song) => MusicCard(
-                                        image: song.imageUrl,
+                                        image: song.coverImage,
                                         title: song.title,
                                         artist: song.artist,
                                         onTap: () {
                                           MusicController.playFromUrl(
-                                            url: song.url,
+                                            url: song.fileUrl!,
                                             title: song.title,
                                             artist: song.artist,
-                                            imageUrl: song.imageUrl,
+                                            imageUrl: song.coverImage,
                                           );
                                         },
                                       ),
@@ -264,14 +272,6 @@ class _TunerScreenState extends State<TunerScreen> {
                       ),
                       const SizedBox(height: 8),
                       _buildSongsList(songs),
-
-                      // Show offline songs if available
-                      if (offlineSongs.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        _sectionTitle('Offline Songs'),
-                        const SizedBox(height: 8),
-                        _buildSongsList(offlineSongs.take(3).toList()),
-                      ],
                     ],
                   ],
                 ),
@@ -297,8 +297,8 @@ class _TunerScreenState extends State<TunerScreen> {
     return Column(
       children: songsList.map((song) {
         return MusicListTile(
-          image: song.imageUrl.startsWith('http')
-              ? song.imageUrl
+          image: song.coverImage.startsWith('http')
+              ? song.coverImage
               : 'assets/images/logo.png',
           title: song.title,
           subtitle: song.artist,
@@ -312,10 +312,10 @@ class _TunerScreenState extends State<TunerScreen> {
               return;
             }
             MusicController.playFromUrl(
-              url: song.localPath ?? song.url,
+              url: song.localPath ?? song.fileUrl!,
               title: song.title,
               artist: song.artist,
-              imageUrl: song.imageUrl,
+              imageUrl: song.coverImage,
             );
           },
           onMoreTap: (position) {

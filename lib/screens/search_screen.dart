@@ -1,8 +1,3 @@
-/// Search Screen
-/// Search songs with API integration.
-/// Uses cached recent searches for offline mode.
-library;
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/music_controller.dart';
@@ -94,7 +89,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
     final allSongs = [...cachedSongs, ...downloadedSongs];
-    final uniqueSongs = <String, Song>{};
+    final uniqueSongs = <int, Song>{};
     for (final song in allSongs) {
       uniqueSongs[song.id] = song;
     }
@@ -240,10 +235,10 @@ class _SearchScreenState extends State<SearchScreen> {
             }
 
             MusicController.playFromUrl(
-              url: song.localPath ?? song.url,
+              url: song.localPath ?? song.fileUrl!,
               title: song.title,
               artist: song.artist,
-              imageUrl: song.imageUrl,
+              imageUrl: song.coverImage,
             );
           },
           leading: ClipRRect(
@@ -343,7 +338,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSongImage(Song song) {
-    final imageUrl = song.imageUrl;
+    final imageUrl = song.coverImage;
 
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return Image.network(

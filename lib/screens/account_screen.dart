@@ -5,11 +5,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:music_app/authScreen/sign_in_screen.dart';
 import 'package:music_app/controllers/auth_controller.dart';
+import 'package:music_app/core/api/api_client.dart';
 import 'package:music_app/screens/downloaded_songs_screen.dart';
 import 'package:music_app/screens/help_center_screen.dart';
 import 'package:music_app/services/api_service.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/utils/app_colors.dart';
+import 'package:music_app/widgets/custom_text_field.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -37,6 +39,74 @@ class _AccountScreenState extends State<AccountScreen> {
   void initState() {
     super.initState();
     _initializeControllers();
+    _loadUserData();
+  }
+
+  /// Load current user data from server
+  Future<void> _loadUserData() async {
+    debugPrint('\n📱 [ACCOUNT SCREEN] _loadUserData() called');
+
+    // Check token status
+    final token = ApiClient().authToken;
+    debugPrint('🔑 [TOKEN] Current auth token:');
+    if (token != null) {
+      debugPrint('   ✅ Token exists (${token.length} chars)');
+      final prefix = token.length > 20 ? token.substring(0, 20) : token;
+      debugPrint('   ✅ Token prefix: $prefix...');
+    } else {
+      debugPrint('   ❌ NO TOKEN FOUND - This will cause 401 error!');
+    }
+
+    if (_connectivityService.isOffline) {
+      debugPrint('⚠️  Offline mode: Using cached user data');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      debugPrint('🔄 [API] Fetching from /me endpoint...');
+      // Fetch fresh user data from /me endpoint
+      final response = await _apiService.getProfile();
+
+      debugPrint('📥 [API] Response received:');
+      debugPrint('   - Success: ${response.success}');
+      debugPrint('   - Message: ${response.message}');
+      debugPrint('   - Data: ${response.data}');
+
+      if (response.success && response.data != null && mounted) {
+        final user = response.data!;
+        debugPrint('✅ [SUCCESS] User profile loaded:');
+        debugPrint('   - ID: ${user.id}');
+        debugPrint('   - Name: ${user.name}');
+        debugPrint('   - Email: ${user.email}');
+        debugPrint('   - Phone: ${user.phone}');
+        debugPrint('   - Profile Image: ${user.profileImage}');
+        debugPrint('   - Premium: ${user.isPremium}');
+        debugPrint('   - Created: ${user.createdAt}');
+
+        _authController.updateCurrentUser(user);
+        _initializeControllers();
+        debugPrint('✓ UI Controllers initialized with user data');
+      } else {
+        if (mounted) {
+          debugPrint('❌ [FAILED] Profile fetch failed: ${response.message}');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        debugPrint('❌ [ERROR] Exception during profile load: $e');
+        debugPrint('   Stack trace: ${StackTrace.current}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _initializeControllers() {
@@ -55,11 +125,51 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _onRefresh() async {
-    if (_connectivityService.isOffline) return;
+    debugPrint('\n🔄 [REFRESH] Pull-to-refresh triggered');
 
-    _authController.currentUser;
+    // Check token - try multiple ways to debug
+    final token = ApiClient().authToken;
+    debugPrint('🔑 [TOKEN] Token from ApiClient:');
+    debugPrint('   authToken = $token');
+    debugPrint('   isAuthenticated = ${ApiClient().isAuthenticated}');
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    if (token != null) {
+      debugPrint('   ✅ Token exists (length: ${token.length})');
+    } else {
+      debugPrint('   ❌ NO TOKEN - Refresh will fail with 401!');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Not authenticated. Please log in again.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    if (_connectivityService.isOffline) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No internet connection')));
+      return;
+    }
+
+    // Refresh user profile from server
+    final success = await _authController.refreshUserProfile();
+
+    if (success) {
+      _initializeControllers();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('✅ Profile refreshed')));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Failed to refresh profile')),
+        );
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -78,7 +188,6 @@ class _AccountScreenState extends State<AccountScreen> {
       }
     } catch (e) {
       debugPrint("Image picking error: $e");
-      Get.snackbar('Error', 'Failed to pick image');
     }
   }
 
@@ -92,32 +201,14 @@ class _AccountScreenState extends State<AccountScreen> {
 
       if (response.success && response.data != null) {
         _authController.updateCurrentUser(response.data!);
-        Get.snackbar(
-          'Success',
-          'Profile image updated successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
-        );
       } else {
-        Get.snackbar(
-          'Error',
-          response.message ?? 'Failed to upload image',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        debugPrint('Error on uploading profile');
         setState(() {
           _imageFile = null;
         });
       }
     } catch (e) {
       debugPrint('Upload error: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to upload image: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
       setState(() {
         _imageFile = null;
       });
@@ -130,12 +221,23 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Future<void> _saveProfile() async {
     if (_nameController.text.isEmpty) {
-      Get.snackbar('Error', 'Name cannot be empty');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name cannot be empty')));
       return;
     }
 
     if (_emailController.text.isEmpty) {
-      Get.snackbar('Error', 'Email cannot be empty');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Email cannot be empty')));
+      return;
+    }
+
+    if (_phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Phone cannot be empty')));
       return;
     }
 
@@ -145,43 +247,60 @@ class _AccountScreenState extends State<AccountScreen> {
 
     try {
       final response = await _apiService.updateProfile(
-        name: _nameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text.isEmpty ? null : _phoneController.text,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
       );
 
       if (response.success && response.data != null) {
         _authController.updateCurrentUser(response.data!);
-        setState(() {
-          _isEditing = false;
-        });
-        Get.snackbar(
-          'Success',
-          'Profile updated successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
-        );
+
+        if (mounted) {
+          setState(() {
+            _isEditing = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Text('Profile updated successfully'),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       } else {
-        Get.snackbar(
-          'Error',
-          response.message ?? 'Failed to update profile',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Failed to update profile'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        debugPrint('✗ Failed to update profile: ${response.message}');
       }
     } catch (e) {
-      debugPrint('Save profile error: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to update profile: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      debugPrint('✗ Save profile error: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -218,20 +337,42 @@ class _AccountScreenState extends State<AccountScreen> {
           }),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        color: AppColors.primaryColor,
-        backgroundColor: Colors.black,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildProfileSection(context),
-              const SizedBox(height: 24),
-              _buildMenuSection(context),
-            ],
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: AppColors.primaryColor,
+            backgroundColor: Colors.black,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  _buildProfileSection(context),
+                  const SizedBox(height: 24),
+                  _buildMenuSection(context),
+                ],
+              ),
+            ),
           ),
-        ),
+          // Loading overlay when fetching user data
+          if (_isLoading && _authController.currentUser == null)
+            Container(
+              color: Colors.black.withValues(alpha: 0.6),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: AppColors.primaryColor),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading your profile...',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -403,85 +544,46 @@ class _AccountScreenState extends State<AccountScreen> {
               Column(
                 children: [
                   // Name field
-                  TextField(
+                  CustomTextField(
+                    labelText: 'Full name',
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(
-                        Icons.person_outline,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade700!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade700!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primaryColor),
-                      ),
-                    ),
+                    initialValue: user?.name ?? user?.fullName,
+                    prefixIcon: Icons.person,
+                    keyboardType: TextInputType.name,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter your new name';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
 
-                  // Email field
-                  TextField(
-                    controller: _emailController,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  CustomTextField(
+                    labelText: 'Email',
                     keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(
-                        Icons.email_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade700!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade700!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primaryColor),
-                      ),
-                    ),
+                    controller: _emailController,
+                    prefixIcon: Icons.email,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter your new email';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
 
-                  // Phone field
-                  TextField(
+                  CustomTextField(
+                    labelText: 'Phone',
                     controller: _phoneController,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    prefixIcon: Icons.phone,
                     keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(
-                        Icons.phone_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade700!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade700!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primaryColor),
-                      ),
-                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter your new phone number';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 24),
 

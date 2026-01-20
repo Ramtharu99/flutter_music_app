@@ -48,6 +48,7 @@ dependencies:
   just_audio_background: ^0.0.1-beta.17
   connectivity_plus: ^7.0.0
   http: ^1.2.0
+  shared_preferences: ^2.5.4
 
 
 dev_dependencies:
