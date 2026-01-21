@@ -21,7 +21,6 @@ class _ProfileFormState extends State<ProfileForm> {
   late TextEditingController _phoneController;
 
   bool _isLoading = false;
-  bool _isEditing = false;
 
   @override
   void initState() {
@@ -68,15 +67,12 @@ class _ProfileFormState extends State<ProfileForm> {
 
       if (response.success && response.data != null) {
         _authController.updateCurrentUser(response.data!);
-        setState(() {
-          _isEditing = false;
-        });
         Get.snackbar(
           'Success',
           'Profile updated successfully',
           backgroundColor: Colors.green,
           colorText: Colors.white,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         );
       } else {
         Get.snackbar(
@@ -103,9 +99,6 @@ class _ProfileFormState extends State<ProfileForm> {
 
   void _cancelEditing() {
     _initializeControllers();
-    setState(() {
-      _isEditing = false;
-    });
   }
 
   @override
@@ -115,7 +108,7 @@ class _ProfileFormState extends State<ProfileForm> {
       child: Obx(() {
         final user = _authController.currentUser;
         if (user == null) {
-          return Center(
+          return const Center(
             child: Text(
               'User not loaded',
               style: TextStyle(color: Colors.white),
@@ -126,151 +119,111 @@ class _ProfileFormState extends State<ProfileForm> {
         return Column(
           children: [
             // Name Field
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: CustomTextField(
-                labelText: 'Full Name',
-                prefixIcon: Icons.person_outline,
-                controller: _nameController,
-                enabled: _isEditing,
-              ),
+            _buildInputField(
+              controller: _nameController,
+              labelText: 'Full Name',
+              icon: Icons.person_outline,
             ),
             const SizedBox(height: 16),
 
             // Email Field
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: CustomTextField(
-                labelText: 'Email',
-                prefixIcon: Icons.email_outlined,
-                controller: _emailController,
-                enabled: _isEditing,
-                keyboardType: TextInputType.emailAddress,
-              ),
+            _buildInputField(
+              controller: _emailController,
+              labelText: 'Email',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
 
             // Phone Field
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: CustomTextField(
-                labelText: 'Phone Number',
-                prefixIcon: Icons.phone_outlined,
-                controller: _phoneController,
-                enabled: _isEditing,
-                keyboardType: TextInputType.phone,
-              ),
+            _buildInputField(
+              controller: _phoneController,
+              labelText: 'Phone Number',
+              icon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 32),
 
             // Action Buttons
-            if (!_isEditing)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = true;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _cancelEditing,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Colors.white70),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    'Edit Profile',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                 ),
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : _cancelEditing,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Colors.white70),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
                             ),
-                    ),
+                          )
+                        : const Text(
+                            'Save Changes',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
           ],
         );
       }),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: CustomTextField(
+        labelText: labelText,
+        prefixIcon: icon,
+        controller: controller,
+        enabled: true,
+        // Always editable
+        keyboardType: keyboardType,
+      ),
     );
   }
 }

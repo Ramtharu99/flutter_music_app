@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:music_app/models/payment_model.dart';
 import 'package:music_app/screens/account_screen.dart';
+import 'package:music_app/services/payment_service.dart';
 import 'package:music_app/utils/app_colors.dart';
 
 class UpgradeScreen extends StatefulWidget {
@@ -12,6 +14,39 @@ class UpgradeScreen extends StatefulWidget {
 
 class _UpgradeScreenState extends State<UpgradeScreen> {
   int selectedPlan = 1;
+  PaymentModel currentUser = PaymentModel(userEmail: 'user@example.com');
+  bool isLoading = false;
+
+  Future<void> _pay() async {
+    setState(() => isLoading = true);
+
+    final success = await PaymentService.testPayment();
+
+    if (success) {
+      setState(() => currentUser.isPaid = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            'Payment success',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Payment failed',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    setState(() => isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,9 +170,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
     final isSelected = selectedPlan == index;
 
     return GestureDetector(
-      onTap: () {
-        setState(() => selectedPlan = index);
-      },
+      onTap: () => setState(() => selectedPlan = index),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -207,23 +240,23 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       width: double.infinity,
       height: 55,
       child: ElevatedButton(
-        onPressed: () {
-          // TODO: Connect payment gateway
-        },
+        onPressed: isLoading ? null : _pay,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Text(
-          'Subscribe Now',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Text(
+                'Subscribe Now',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }
@@ -231,9 +264,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   Widget _restoreText() {
     return Center(
       child: TextButton(
-        onPressed: () {
-          // Restore purchases later
-        },
+        onPressed: () {},
         child: const Text(
           'Restore Purchase',
           style: TextStyle(color: Colors.white54),

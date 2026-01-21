@@ -24,6 +24,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan your card to add it automatically</string>
 	
 	<!-- Background Modes for audio playback -->
 	<key>UIBackgroundModes</key>

@@ -1,13 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:music_app/core/api/api_client.dart';
 import 'package:music_app/core/api/api_config.dart';
 import 'package:music_app/core/api/api_response.dart';
 import 'package:music_app/models/artist_model.dart';
 import 'package:music_app/models/playlist_model.dart';
-import 'package:music_app/models/purchase_model.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/models/user_model.dart';
 
@@ -25,47 +23,54 @@ class ApiService {
     required String password,
   }) async {
     try {
-      final response = await _client.post<Map<String, dynamic>>(
+      final response = await _client.post<dynamic>(
         ApiConfig.login,
         body: {'email': email, 'password': password},
       );
 
-      if (response.success && response.data != null) {
-        debugPrint('[API SERVICE] Login response received');
-
-        // Extract 'data' field from response
-        final data = response.data!['data'] as Map<String, dynamic>?;
-        if (data == null) return ApiResponse.error('No data field in response');
-
-        // Extract token and user
-        final token = data['token'] as String?;
-        final userData = data['user'] as Map<String, dynamic>?;
-
-        if (token == null) {
-          debugPrint('No token found in response');
-          return ApiResponse.error('Token not found');
-        }
-        _client.authToken = token;
-        debugPrint(
-          'Token assigned and saved: ${token.substring(0, min(20, token.length))}...',
-        );
-
-        debugPrint(
-          'Token in storage: ${GetStorage().read(ApiClient.tokenKey)}',
-        );
-
-        if (userData == null) {
-          return ApiResponse.error('User data not found in response');
-        }
-
-        final user = User.fromJson(userData);
-        return ApiResponse.success(user, message: response.message);
+      if (!response.success || response.data == null) {
+        return ApiResponse.error(response.message ?? 'Login failed');
       }
 
-      return ApiResponse.error(response.message ?? 'Login failed');
-    } catch (e) {
-      debugPrint('Login error: $e');
-      return ApiResponse.error(e.toString());
+      debugPrint('[API SERVICE] Raw login response: ${response.data}');
+
+      // ✅ NORMALIZE RESPONSE
+      Map<String, dynamic> payload;
+
+      if (response.data is Map<String, dynamic> &&
+          (response.data as Map<String, dynamic>).containsKey('data')) {
+        // Case A: { success, message, data: {...} }
+        payload = response.data['data'];
+      } else {
+        // Case B: { user, token }
+        payload = response.data as Map<String, dynamic>;
+      }
+
+      final token = payload['token'];
+      final userData = payload['user'];
+
+      if (token == null || token.toString().isEmpty) {
+        debugPrint('❌ Token missing in payload: $payload');
+        return ApiResponse.error('Token not found');
+      }
+
+      // 🔑 SAVE TOKEN
+      _client.authToken = token.toString();
+      debugPrint('🔑 Token saved: ${token.toString().substring(0, 15)}...');
+
+      if (userData == null) {
+        debugPrint('❌ User missing in payload');
+        return ApiResponse.error('User data not found');
+      }
+
+      final user = User.fromJson(userData as Map<String, dynamic>);
+      debugPrint('✅ User parsed: ${user.email}');
+
+      return ApiResponse.success(user, message: response.message);
+    } catch (e, st) {
+      debugPrint('❌ Login error: $e');
+      debugPrint('$st');
+      return ApiResponse.error('Login error');
     }
   }
 
@@ -389,39 +394,26 @@ class ApiService {
   Future<ApiResponse<User>> getProfile() async {
     debugPrint('🚀 getProfile() called');
 
-    // Check token before API call
-    final token = _client.authToken;
-    debugPrint('🔑 [API SERVICE] Token check:');
-    if (token != null) {
-      debugPrint('   ✅ Token available (${token.length} chars)');
-    } else {
-      debugPrint('   ❌ NO TOKEN - API will return 401 Unauthorized!');
-    }
-
     try {
-      debugPrint('🔍 Fetching user profile from /me endpoint...');
       final response = await _client.get<dynamic>(ApiConfig.profile);
 
-      debugPrint('📥 API Response: ${response.data}');
+      debugPrint('PROFILE RESPONSE: ${response.data}');
 
       if (response.success && response.data != null) {
-        final userData = response.data is Map
-            ? response.data
-            : response.data['data'];
+        final root = response.data as Map<String, dynamic>;
+        final userJson = root['data'] as Map<String, dynamic>;
 
-        debugPrint('👤 Parsing user data: $userData');
+        final user = User.fromJson(userJson);
 
-        final user = User.fromJson(userData);
-        debugPrint('✓ User object created: ${user.email}');
-
+        debugPrint('User profile parsed: ${user.email}');
         return ApiResponse.success(user);
       }
 
-      debugPrint('✗ Profile fetch failed: ${response.message}');
       return ApiResponse.error(response.message ?? 'Failed to load profile');
-    } catch (e) {
-      debugPrint('✗ Get profile error: $e');
-      return ApiResponse.error('Error fetching profile: ${e.toString()}');
+    } catch (e, st) {
+      debugPrint('getProfile error: $e');
+      debugPrint('$st');
+      return ApiResponse.error('Error fetching profile');
     }
   }
 
@@ -676,86 +668,6 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('Increment play count error: $e');
-      return ApiResponse.error(e.toString());
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // ║                     PURCHASE MANAGEMENT                         ║
-  // ═══════════════════════════════════════════════════════════════════
-
-  /// Purchase a music track
-  Future<ApiResponse<Purchase>> purchaseMusic(int musicId) async {
-    try {
-      final response = await _client.post<Map<String, dynamic>>(
-        ApiConfig.purchase,
-        body: {'music_id': musicId},
-      );
-
-      if (response.success && response.data != null) {
-        final purchaseData = response.data is Map
-            ? response.data
-            : response.data?['data'];
-
-        final purchase = Purchase.fromJson(
-          purchaseData as Map<String, dynamic>,
-        );
-        return ApiResponse.success(
-          purchase,
-          message: response.message ?? 'Music purchased successfully',
-        );
-      }
-
-      return ApiResponse.error(response.message ?? 'Failed to purchase music');
-    } catch (e) {
-      debugPrint('Purchase music error: $e');
-      return ApiResponse.error(e.toString());
-    }
-  }
-
-  /// Get user's purchased music
-  Future<ApiResponse<List<Purchase>>> getMyPurchases({int page = 1}) async {
-    try {
-      final response = await _client.get<dynamic>(
-        ApiConfig.myPurchases,
-        queryParams: {'page': page},
-      );
-
-      if (response.success && response.data != null) {
-        final List<dynamic> purchasesData = response.data is List
-            ? response.data
-            : response.data?['data'] ?? [];
-
-        final purchases = purchasesData
-            .map((json) => Purchase.fromJson(json as Map<String, dynamic>))
-            .toList();
-        return ApiResponse.success(purchases);
-      }
-
-      return ApiResponse.error(response.message ?? 'Failed to load purchases');
-    } catch (e) {
-      debugPrint('Get my purchases error: $e');
-      return ApiResponse.error(e.toString());
-    }
-  }
-
-  /// Check if user has purchased a specific music
-  Future<ApiResponse<bool>> checkPurchaseStatus(int musicId) async {
-    try {
-      final response = await _client.get<Map<String, dynamic>>(
-        '${ApiConfig.checkPurchase}/$musicId',
-      );
-
-      if (response.success && response.data != null) {
-        final isPurchased = response.data?['is_purchased'] ?? false;
-        return ApiResponse.success(isPurchased as bool);
-      }
-
-      return ApiResponse.error(
-        response.message ?? 'Failed to check purchase status',
-      );
-    } catch (e) {
-      debugPrint('Check purchase status error: $e');
       return ApiResponse.error(e.toString());
     }
   }

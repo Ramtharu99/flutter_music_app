@@ -208,23 +208,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Skip login for demo/offline (optional)
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      _authController.loginOffline();
-                      Get.offAll(() => const MainScreen());
-                    },
-                    child: Text(
-                      'Continue without login',
-                      style: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

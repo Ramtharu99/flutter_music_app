@@ -38,11 +38,7 @@ class AuthController extends GetxController {
 
   Future<void> _loadInitialState() async {
     try {
-      debugPrint('\n═══════════════════════════════════════════════════');
-      debugPrint('🔄 [AUTH CONTROLLER] Initializing...');
-      debugPrint('═══════════════════════════════════════════════════');
-
-      // Load first time flag
+      debugPrint('auth controller initialize.....');
       _isFirstTime.value = _storage.read('isFirstTime') ?? true;
       debugPrint('📱 First Time: ${_isFirstTime.value}');
 
@@ -52,7 +48,7 @@ class AuthController extends GetxController {
 
       // Try to load token from storage
       final storedToken = _storage.read('auth_token');
-      debugPrint('🔑 Token in Storage: ${storedToken != null ? 'YES' : 'NO'}');
+      debugPrint('Token in Storage: ${storedToken != null ? 'YES' : 'NO'}');
       if (storedToken != null) {
         ApiClient().authToken = storedToken;
         debugPrint('✓ Token loaded into ApiClient');
@@ -68,7 +64,7 @@ class AuthController extends GetxController {
 
       // If logged in, fetch fresh profile from API
       if (_isLoggedIn.value && storedToken != null) {
-        debugPrint('\n🌐 Fetching profile from API...');
+        debugPrint('\nFetching profile from API...');
         await Future.delayed(const Duration(milliseconds: 500));
         await fetchProfile();
       }
@@ -112,7 +108,7 @@ class AuthController extends GetxController {
         // Store test token
         final testToken = 'test_token_12345_dummy_token_for_testing';
         ApiClient().authToken = testToken;
-        debugPrint('✅ Test token stored: $testToken');
+        debugPrint('Test token stored: $testToken');
 
         final dummyUser = User(
           id: 1,
@@ -254,12 +250,12 @@ class AuthController extends GetxController {
 
       // If this is a retry, don't retry anymore
       if (retryCount >= 2) {
-        debugPrint('❌ [FAILED] No token after retries');
+        debugPrint('❌ No token after retries');
         return;
       }
 
       // Retry after a short delay
-      debugPrint('⏳ Retrying in 500ms...');
+      debugPrint('Retrying...');
       await Future.delayed(const Duration(milliseconds: 500));
       return fetchProfile(retryCount: retryCount + 1);
     }
@@ -269,16 +265,16 @@ class AuthController extends GetxController {
           Get.find<ConnectivityService>();
 
       if (connectivityService.isOffline) {
-        debugPrint('⚠️  Offline mode: Loading from cache');
+        debugPrint('Offline mode: Loading from cache');
         _currentUser.value = _offlineStorage.getUser();
         return;
       }
 
-      debugPrint('🌐 [API] Calling getProfile() from API service');
+      debugPrint('[API] Calling getProfile() from API service');
       // Fetch user profile from /me endpoint
       final response = await _apiService.getProfile();
 
-      debugPrint('📥 [API] getProfile() response received');
+      debugPrint('[API] getProfile() response received');
       debugPrint('   - Success: ${response.success}');
       debugPrint('   - Message: ${response.message}');
 
@@ -578,7 +574,7 @@ class AuthController extends GetxController {
         await _offlineStorage.clearUser();
         ApiClient().clearTokens();
 
-        debugPrint('✅ Account deleted successfully');
+        debugPrint('Account deleted successfully');
         return true;
       } else {
         _errorMessage.value = response.message ?? 'Failed to delete account';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/auth_controller.dart';
-import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/screens/account_screen.dart';
@@ -13,8 +12,11 @@ import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/services/offline_storage_service.dart';
 import 'package:music_app/utils/app_colors.dart';
 import 'package:music_app/widgets/bottom_player.dart';
+import 'package:music_app/widgets/chip_widget.dart';
+import 'package:music_app/widgets/empty_state.dart';
 import 'package:music_app/widgets/music_card.dart';
-import 'package:music_app/widgets/music_list_tile.dart';
+import 'package:music_app/widgets/section_title.dart';
+import 'package:music_app/widgets/songs_list.dart';
 
 class TunerScreen extends StatefulWidget {
   const TunerScreen({super.key});
@@ -45,7 +47,6 @@ class _TunerScreenState extends State<TunerScreen> {
   List<Song> featuredSongs = [];
   List<Song> offlineSongs = [];
   bool isLoading = true;
-  String? errorMessage;
 
   @override
   void initState() {
@@ -54,12 +55,9 @@ class _TunerScreenState extends State<TunerScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
+    setState(() => isLoading = true);
 
-    // Always load offline songs
+    // Load offline songs always
     offlineSongs = _offlineStorage.getDownloadedSongs();
 
     if (_connectivityService.isOnline) {
@@ -73,35 +71,28 @@ class _TunerScreenState extends State<TunerScreen> {
 
   Future<void> _loadOnlineData() async {
     try {
-      // Fetch songs from API
       final songsResponse = await _apiService.getSongs();
       if (songsResponse.success && songsResponse.data != null) {
         songs = songsResponse.data!;
-        // Cache for offline use
         _offlineStorage.cacheSongs(songs);
       }
 
-      // Fetch featured songs
       final featuredResponse = await _apiService.getFeaturedSongs();
       if (featuredResponse.success && featuredResponse.data != null) {
         featuredSongs = featuredResponse.data!;
       }
     } catch (e) {
       debugPrint('Error loading online data: $e');
-      // Fallback to cached data
       _loadOfflineData();
     }
   }
 
-  /// Load cached data when offline
   void _loadOfflineData() {
     songs = _offlineStorage.getCachedSongs();
     featuredSongs = songs.take(5).toList();
 
     if (songs.isEmpty && offlineSongs.isEmpty) {
-      setState(() {
-        selectedChip = 'Offline';
-      });
+      setState(() => selectedChip = 'Offline');
     }
   }
 
@@ -125,10 +116,9 @@ class _TunerScreenState extends State<TunerScreen> {
           if (_connectivityService.isOffline) {
             return Row(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+              children: const [
                 Icon(Icons.cloud_off, color: Colors.orange, size: 16),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   'Offline Mode',
                   style: TextStyle(
@@ -149,9 +139,6 @@ class _TunerScreenState extends State<TunerScreen> {
           ),
           IconButton(
             onPressed: () async {
-              debugPrint(
-                '\n👤 [TUNER SCREEN] Account icon tapped - Fetching user data',
-              );
               final authController = Get.find<AuthController>();
               await authController.fetchProfile();
               Get.to(() => const AccountScreen());
@@ -178,20 +165,23 @@ class _TunerScreenState extends State<TunerScreen> {
                       child: Row(
                         children: chips
                             .map(
-                              (chip) => _chip(
-                                chip['label'],
-                                chip['icon'] as IconData,
+                              (chip) => ChipWidget(
+                                label: chip['label'],
+                                icon: chip['icon'] as IconData,
+                                isSelected: selectedChip == chip['label'],
+                                onTap: () {
+                                  setState(() => selectedChip = chip['label']);
+                                },
                               ),
                             )
                             .toList(),
                       ),
                     ),
-
                     const SizedBox(height: 24),
 
-                    // Content based on selected chip
+                    // Content
                     if (selectedChip == 'Sounds') ...[
-                      _sectionTitle('Sounds'),
+                      const SectionTitle(title: 'Sounds'),
                       const SizedBox(height: 12),
                       const Text(
                         'Ambient & nature sounds coming soon...',
@@ -200,7 +190,7 @@ class _TunerScreenState extends State<TunerScreen> {
                     ],
 
                     if (selectedChip == 'Frequencies') ...[
-                      _sectionTitle('Frequencies'),
+                      const SectionTitle(title: 'Frequencies'),
                       const SizedBox(height: 12),
                       const Text(
                         'Healing frequencies coming soon...',
@@ -209,26 +199,34 @@ class _TunerScreenState extends State<TunerScreen> {
                     ],
 
                     if (selectedChip == 'Songs') ...[
-                      _sectionTitle('Quick picks'),
+                      const SectionTitle(title: 'Quick picks'),
                       const SizedBox(height: 8),
-                      _buildSongsList(songs),
+                      SongsList(
+                        songs: selectedChip == 'Offline' ? offlineSongs : songs,
+                        offlineStorageService: _offlineStorage,
+                        connectivityService: _connectivityService,
+                      ),
                     ],
 
                     if (selectedChip == 'Offline') ...[
-                      _sectionTitle('Downloaded Songs'),
+                      const SectionTitle(title: 'Downloaded Songs'),
                       const SizedBox(height: 8),
                       if (offlineSongs.isEmpty)
-                        _emptyState(
-                          'No downloaded songs',
-                          'Download songs to play them offline',
+                        const EmptyState(
+                          title: 'No downloaded songs',
+                          subtitle: 'Download songs to play them offline',
                         )
                       else
-                        _buildSongsList(offlineSongs),
+                        SongsList(
+                          songs: songs,
+                          offlineStorageService: _offlineStorage,
+                          connectivityService: _connectivityService,
+                        ),
                     ],
 
                     if (selectedChip == 'All') ...[
-                      _sectionTitle(
-                        'Playlist',
+                      SectionTitle(
+                        title: 'Playlist',
                         onMoreTap: () => Get.to(() => PlaylistScreen()),
                       ),
                       const SizedBox(height: 12),
@@ -263,15 +261,17 @@ class _TunerScreenState extends State<TunerScreen> {
                                 ],
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      _sectionTitle(
-                        'Quick picks',
+                      SectionTitle(
+                        title: 'Quick picks',
                         onMoreTap: () => Get.to(() => SongsListScreen()),
                       ),
                       const SizedBox(height: 8),
-                      _buildSongsList(songs),
+                      SongsList(
+                        songs: songs,
+                        offlineStorageService: _offlineStorage,
+                        connectivityService: _connectivityService,
+                      ),
                     ],
                   ],
                 ),
@@ -279,185 +279,5 @@ class _TunerScreenState extends State<TunerScreen> {
             ),
       bottomSheet: const BottomPlayer(),
     );
-  }
-
-  /// Build songs list widget
-  Widget _buildSongsList(List<Song> songsList) {
-    if (songsList.isEmpty) {
-      return Center(
-        child: _emptyState(
-          'No songs available',
-          _connectivityService.isOffline
-              ? 'Connect to internet to load songs'
-              : 'Pull to refresh',
-        ),
-      );
-    }
-
-    return Column(
-      children: songsList.map((song) {
-        return MusicListTile(
-          image: song.coverImage.startsWith('http')
-              ? song.coverImage
-              : 'assets/images/logo.png',
-          title: song.title,
-          subtitle: song.artist,
-          onTap: () {
-            if (_connectivityService.isOffline && !song.isDownloaded) {
-              Get.snackbar(
-                'Offline',
-                'This song is not available offline',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-              return;
-            }
-            MusicController.playFromUrl(
-              url: song.localPath ?? song.fileUrl!,
-              title: song.title,
-              artist: song.artist,
-              imageUrl: song.coverImage,
-            );
-          },
-          onMoreTap: (position) {
-            _showSongMenu(context, position, song);
-          },
-        );
-      }).toList(),
-    );
-  }
-
-  /// Empty state widget
-  Widget _emptyState(String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Icon(Icons.music_off, size: 48, color: Colors.grey.shade600),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(String text, IconData icon) {
-    final bool isSelected = selectedChip == text;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedChip = text;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryColor : Colors.grey.shade900,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title, {VoidCallback? onMoreTap}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        if (onMoreTap != null)
-          InkWell(
-            onTap: onMoreTap,
-            child: Text('More', style: TextStyle(color: Colors.grey.shade400)),
-          ),
-      ],
-    );
-  }
-
-  void _showSongMenu(BuildContext context, Offset position, Song song) async {
-    final DownloadController downloadController =
-        Get.find<DownloadController>();
-
-    final selected = await showMenu(
-      context: context,
-      color: Colors.grey.shade900,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      position: RelativeRect.fromLTRB(position.dx, position.dy, 0, 0),
-      items: [
-        PopupMenuItem(
-          value: 'download',
-          child: Row(
-            children: [
-              Icon(
-                song.isDownloaded ? Icons.check : Icons.download,
-                color: song.isDownloaded ? Colors.green : Colors.white,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                song.isDownloaded ? 'Downloaded' : 'Download',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'save',
-          child: Text('Save', style: TextStyle(color: Colors.white)),
-        ),
-        const PopupMenuItem(
-          value: 'playlist',
-          child: Text('Add to Playlist', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    );
-
-    if (selected == 'download' && !song.isDownloaded) {
-      // Save song to offline storage
-      final downloadedSong = song.copyWith(isDownloaded: true);
-      _offlineStorage.saveDownloadedSong(downloadedSong);
-      downloadController.downloadSong(song.title);
-
-      Get.snackbar(
-        'Downloaded',
-        '${song.title} saved for offline playback',
-        backgroundColor: Colors.grey.shade800,
-        colorText: Colors.white,
-      );
-
-      // Refresh to show updated state
-      setState(() {
-        offlineSongs = _offlineStorage.getDownloadedSongs();
-      });
-    }
   }
 }

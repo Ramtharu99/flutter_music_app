@@ -7,11 +7,13 @@ import 'package:music_app/authScreen/sign_in_screen.dart';
 import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/core/api/api_client.dart';
 import 'package:music_app/screens/downloaded_songs_screen.dart';
+import 'package:music_app/screens/edit_profile_screen.dart';
 import 'package:music_app/screens/help_center_screen.dart';
+import 'package:music_app/screens/manage_account_screen.dart';
+import 'package:music_app/screens/user_info_screen.dart';
 import 'package:music_app/services/api_service.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/utils/app_colors.dart';
-import 'package:music_app/widgets/custom_text_field.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -161,12 +163,12 @@ class _AccountScreenState extends State<AccountScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('✅ Profile refreshed')));
+        ).showSnackBar(const SnackBar(content: Text('Profile refreshed')));
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Failed to refresh profile')),
+          const SnackBar(content: Text('Failed to refresh profile')),
         );
       }
     }
@@ -517,11 +519,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _isEditing = true;
-                      });
-                    },
+                    onPressed: () => Get.to(() => EditProfileScreen()),
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
                       padding: const EdgeInsets.symmetric(
@@ -538,107 +537,6 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                   ),
                 ],
-              )
-            else
-              // Edit mode
-              Column(
-                children: [
-                  // Name field
-                  CustomTextField(
-                    labelText: 'Full name',
-                    controller: _nameController,
-                    initialValue: user?.name ?? user?.fullName,
-                    prefixIcon: Icons.person,
-                    keyboardType: TextInputType.name,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter your new name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  CustomTextField(
-                    labelText: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                    controller: _emailController,
-                    prefixIcon: Icons.email,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter your new email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  CustomTextField(
-                    labelText: 'Phone',
-                    controller: _phoneController,
-                    prefixIcon: Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter your new phone number';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isLoading ? null : _cancelEditing,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: Colors.white70),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 14, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Save Changes',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
           ],
         ),
@@ -648,6 +546,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildMenuSection(BuildContext context) {
     final menuItems = [
+      /*{'icon': Icons.person, 'title': 'My Info'},*/
+      {'icon': Icons.person, 'title': 'Manage Account'},
       {'icon': Icons.download_done, 'title': 'Downloaded Songs'},
       {'icon': Icons.help_outline, 'title': 'Help Center'},
       {'icon': Icons.logout, 'title': 'Logout'},
@@ -685,6 +585,10 @@ class _AccountScreenState extends State<AccountScreen> {
                   Get.to(() => const HelpCenterScreen());
                 } else if (item['title'] == 'Downloaded Songs') {
                   Get.to(() => const DownloadedSongsScreen());
+                } else if (item['title'] == 'My Info') {
+                  Get.to(() => UserInfoScreen());
+                } else if (item['title'] == 'Manage Account') {
+                  Get.to(() => ManageAccountScreen());
                 }
               },
             ),

@@ -1,36 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/authScreen/sign_in_screen.dart';
 import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/widgets/custom_text_field.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _password_confirmation = TextEditingController();
-  final TextEditingController _phone = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final TextEditingController _oldPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _passwordConfirmationController =
+      TextEditingController();
 
   final AuthController _authController = Get.find<AuthController>();
   final ConnectivityService _connectivityService =
       Get.find<ConnectivityService>();
 
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _password_confirmation.dispose();
-    _phone.dispose();
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
+    _passwordConfirmationController.dispose();
     super.dispose();
   }
 
@@ -38,31 +35,32 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Get.back(),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        ),
+        title: const Text(
+          'Change Password',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.black,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(12),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 140,
-                    width: 140,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
                 // Offline warning
                 Obx(() {
                   if (_connectivityService.isOffline) {
                     return Container(
                       padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.2),
+                        color: Colors.orange.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.orange),
                       ),
@@ -72,7 +70,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Internet required for registration',
+                              'Internet required to change password',
                               style: TextStyle(
                                 color: Colors.orange,
                                 fontSize: 12,
@@ -87,43 +85,27 @@ class _SignupScreenState extends State<SignupScreen> {
                 }),
 
                 CustomTextField(
-                  labelText: 'Name',
-                  prefixIcon: Icons.person_outline,
-                  controller: _nameController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                CustomTextField(
-                  labelText: 'Email',
-                  prefixIcon: Icons.email_outlined,
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                CustomTextField(
-                  labelText: 'Password',
+                  labelText: 'Old Password',
                   prefixIcon: Icons.lock_outline,
-                  controller: _passwordController,
+                  controller: _oldPasswordController,
                   isPassword: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Enter your password';
+                      return 'Enter your old password';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                CustomTextField(
+                  labelText: 'New Password',
+                  prefixIcon: Icons.lock_outline,
+                  controller: _newPasswordController,
+                  isPassword: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Enter your new password';
                     }
                     if (value.length < 6) {
                       return 'Password must be at least 6 characters';
@@ -134,35 +116,20 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 12),
 
                 CustomTextField(
-                  labelText: 'Confirm Password',
+                  labelText: 'Confirm New Password',
                   prefixIcon: Icons.lock_outline,
+                  controller: _passwordConfirmationController,
                   isPassword: true,
-                  controller: _password_confirmation,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Confirm your password';
+                      return 'Re-enter your new password';
                     }
-                    if (value != _passwordController.text) {
+                    if (value != _newPasswordController.text) {
                       return 'Passwords do not match';
                     }
                     return null;
                   },
                 ),
-
-                const SizedBox(height: 12),
-                CustomTextField(
-                  labelText: 'Phone',
-                  keyboardType: TextInputType.phone,
-                  prefixIcon: Icons.phone,
-                  controller: _phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your phone number';
-                    }
-                    return null;
-                  },
-                ),
-
                 const SizedBox(height: 24),
 
                 // Error message
@@ -172,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.2),
+                        color: Colors.red.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -199,13 +166,16 @@ class _SignupScreenState extends State<SignupScreen> {
                   return const SizedBox.shrink();
                 }),
 
+                const SizedBox(height: 12),
+
+                // Change Password Button
                 SizedBox(
                   width: double.infinity,
                   child: Obx(
                     () => ElevatedButton(
                       onPressed: _authController.isLoading
                           ? null
-                          : _handleSignUp,
+                          : _changePassword,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -223,7 +193,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                             )
                           : const Text(
-                              'Sign Up',
+                              'Change Password',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,
@@ -231,26 +201,6 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-
-                const SizedBox(height: 8),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Already have an account?",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                    TextButton(
-                      onPressed: () => Get.to(() => SignInScreen()),
-                      child: const Text(
-                        'Sign In',
-                        style: TextStyle(fontSize: 14, color: Colors.white),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -260,18 +210,36 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Future<void> _handleSignUp() async {
+  Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await _authController.register(
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      phone: _phone.text.trim(),
+    final success = await _authController.changePassword(
+      currentPassword: _oldPasswordController.text,
+      newPassword: _newPasswordController.text,
+      confirmPassword: _passwordConfirmationController.text,
     );
 
     if (success) {
-      Get.offAll(() => const SignInScreen());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            'Your password change successfully',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+      Get.back();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Failed to change password',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
     }
   }
 }
