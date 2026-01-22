@@ -30,19 +30,16 @@ class _TunerScreenState extends State<TunerScreen> {
 
   final List<Map<String, dynamic>> chips = [
     {'label': 'All', 'icon': Icons.library_music},
-    {'label': 'Sounds', 'icon': Icons.graphic_eq},
-    {'label': 'Frequencies', 'icon': Icons.waves},
     {'label': 'Songs', 'icon': Icons.music_note},
-    {'label': 'Offline', 'icon': Icons.file_download_off},
+    {'label': 'Frequencies', 'icon': Icons.waves},
+    {'label': 'Offline', 'icon': Icons.file_download},
   ];
 
-  // Services
   final ApiService _apiService = ApiService();
   final OfflineStorageService _offlineStorage = OfflineStorageService();
   final ConnectivityService _connectivityService =
       Get.find<ConnectivityService>();
 
-  // State
   List<Song> songs = [];
   List<Song> featuredSongs = [];
   List<Song> offlineSongs = [];
@@ -57,43 +54,21 @@ class _TunerScreenState extends State<TunerScreen> {
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
-    // Load offline songs always
     offlineSongs = _offlineStorage.getDownloadedSongs();
 
     if (_connectivityService.isOnline) {
-      await _loadOnlineData();
+      final response = await _apiService.getSongs();
+      if (response.success && response.data != null) {
+        songs = response.data!;
+        _offlineStorage.cacheSongs(songs);
+        featuredSongs = songs.take(5).toList();
+      }
     } else {
-      _loadOfflineData();
+      songs = _offlineStorage.getCachedSongs();
+      featuredSongs = songs.take(5).toList();
     }
 
     setState(() => isLoading = false);
-  }
-
-  Future<void> _loadOnlineData() async {
-    try {
-      final songsResponse = await _apiService.getSongs();
-      if (songsResponse.success && songsResponse.data != null) {
-        songs = songsResponse.data!;
-        _offlineStorage.cacheSongs(songs);
-      }
-
-      final featuredResponse = await _apiService.getFeaturedSongs();
-      if (featuredResponse.success && featuredResponse.data != null) {
-        featuredSongs = featuredResponse.data!;
-      }
-    } catch (e) {
-      debugPrint('Error loading online data: $e');
-      _loadOfflineData();
-    }
-  }
-
-  void _loadOfflineData() {
-    songs = _offlineStorage.getCachedSongs();
-    featuredSongs = songs.take(5).toList();
-
-    if (songs.isEmpty && offlineSongs.isEmpty) {
-      setState(() => selectedChip = 'Offline');
-    }
   }
 
   @override
@@ -101,8 +76,6 @@ class _TunerScreenState extends State<TunerScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.all(8),
           child: Image.asset(
@@ -112,26 +85,8 @@ class _TunerScreenState extends State<TunerScreen> {
             fit: BoxFit.cover,
           ),
         ),
-        title: Obx(() {
-          if (_connectivityService.isOffline) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.cloud_off, color: Colors.orange, size: 16),
-                SizedBox(width: 6),
-                Text(
-                  'Offline Mode',
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            );
-          }
-          return const SizedBox.shrink();
-        }),
+        backgroundColor: Colors.black,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: () => Get.to(() => const SearchScreen()),
@@ -139,8 +94,7 @@ class _TunerScreenState extends State<TunerScreen> {
           ),
           IconButton(
             onPressed: () async {
-              final authController = Get.find<AuthController>();
-              await authController.fetchProfile();
+              await Get.find<AuthController>().fetchProfile();
               Get.to(() => const AccountScreen());
             },
             icon: const Icon(Icons.person, color: Colors.white),
@@ -159,35 +113,74 @@ class _TunerScreenState extends State<TunerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Category chips
+                    // CHIPS
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: chips
-                            .map(
-                              (chip) => ChipWidget(
-                                label: chip['label'],
-                                icon: chip['icon'] as IconData,
-                                isSelected: selectedChip == chip['label'],
-                                onTap: () {
-                                  setState(() => selectedChip = chip['label']);
-                                },
-                              ),
-                            )
-                            .toList(),
+                        children: chips.map((chip) {
+                          return ChipWidget(
+                            label: chip['label'],
+                            icon: chip['icon'],
+                            isSelected: selectedChip == chip['label'],
+                            onTap: () {
+                              setState(() {
+                                selectedChip = chip['label'];
+                              });
+                            },
+                          );
+                        }).toList(),
                       ),
                     ),
+
                     const SizedBox(height: 24),
 
-                    // Content
-                    if (selectedChip == 'Sounds') ...[
-                      const SectionTitle(title: 'Sounds'),
+                    if (selectedChip == 'All') ...[
+                      SectionTitle(
+                        title: 'Featured',
+                        onMoreTap: () => Get.to(() => PlaylistScreen()),
+                      ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Ambient & nature sounds coming soon...',
-                        style: TextStyle(color: Colors.grey),
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: featuredSongs.length,
+                          itemBuilder: (_, index) {
+                            final song = featuredSongs[index];
+                            return MusicCard(
+                              image: song.coverImage,
+                              title: song.title,
+                              artist: song.artist,
+                              onTap: () {
+                                MusicController.playFromUrl(
+                                  url: song.fileUrl!,
+                                  title: song.title,
+                                  artist: song.artist,
+                                  imageUrl: song.coverImage,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SectionTitle(
+                        title: 'All Songs',
+                        onMoreTap: () => Get.to(() => SongsListScreen()),
+                      ),
+                      SongsList(
+                        songs: songs,
+                        offlineStorageService: _offlineStorage,
+                        connectivityService: _connectivityService,
                       ),
                     ],
+
+                    if (selectedChip == 'Songs')
+                      SongsList(
+                        songs: songs,
+                        offlineStorageService: _offlineStorage,
+                        connectivityService: _connectivityService,
+                      ),
 
                     if (selectedChip == 'Frequencies') ...[
                       const SectionTitle(title: 'Frequencies'),
@@ -198,81 +191,17 @@ class _TunerScreenState extends State<TunerScreen> {
                       ),
                     ],
 
-                    if (selectedChip == 'Songs') ...[
-                      const SectionTitle(title: 'Quick picks'),
-                      const SizedBox(height: 8),
-                      SongsList(
-                        songs: selectedChip == 'Offline' ? offlineSongs : songs,
-                        offlineStorageService: _offlineStorage,
-                        connectivityService: _connectivityService,
-                      ),
-                    ],
-
-                    if (selectedChip == 'Offline') ...[
-                      const SectionTitle(title: 'Downloaded Songs'),
-                      const SizedBox(height: 8),
-                      if (offlineSongs.isEmpty)
-                        const EmptyState(
-                          title: 'No downloaded songs',
-                          subtitle: 'Download songs to play them offline',
-                        )
-                      else
-                        SongsList(
-                          songs: songs,
-                          offlineStorageService: _offlineStorage,
-                          connectivityService: _connectivityService,
-                        ),
-                    ],
-
-                    if (selectedChip == 'All') ...[
-                      SectionTitle(
-                        title: 'Playlist',
-                        onMoreTap: () => Get.to(() => PlaylistScreen()),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 200,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: featuredSongs.isNotEmpty
-                              ? featuredSongs
-                                    .map(
-                                      (song) => MusicCard(
-                                        image: song.coverImage,
-                                        title: song.title,
-                                        artist: song.artist,
-                                        onTap: () {
-                                          MusicController.playFromUrl(
-                                            url: song.fileUrl!,
-                                            title: song.title,
-                                            artist: song.artist,
-                                            imageUrl: song.coverImage,
-                                          );
-                                        },
-                                      ),
-                                    )
-                                    .toList()
-                              : [
-                                  MusicCard(
-                                    image: 'assets/images/logo.png',
-                                    title: 'Unknown Song',
-                                    artist: 'Unknown Artist',
-                                  ),
-                                ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SectionTitle(
-                        title: 'Quick picks',
-                        onMoreTap: () => Get.to(() => SongsListScreen()),
-                      ),
-                      const SizedBox(height: 8),
-                      SongsList(
-                        songs: songs,
-                        offlineStorageService: _offlineStorage,
-                        connectivityService: _connectivityService,
-                      ),
-                    ],
+                    if (selectedChip == 'Offline')
+                      offlineSongs.isEmpty
+                          ? const EmptyState(
+                              title: 'No downloaded songs',
+                              subtitle: 'Download songs to play offline',
+                            )
+                          : SongsList(
+                              songs: offlineSongs,
+                              offlineStorageService: _offlineStorage,
+                              connectivityService: _connectivityService,
+                            ),
                   ],
                 ),
               ),
