@@ -1,31 +1,75 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:http/http.dart' as http;
 
 class PaymentService {
-  // Replace this with a fresh test PaymentIntent client secret from Stripe Dashboard
-  static const String testClientSecret =
-      "pi_3N7G4hJkLmnO_secret_KlMnvb..."; // TEMPORARY test secret
+  static const String _testSecretToken =
+      "sk_test_51Srg46Qkp33zQdtFrxFEnr1vByMX6jSoCHWv51SvgUAMaKTOiQYgnaKqstOdA75kfoFwnrt6c5EGkdg6AwtoRHtA00Ovbnq8mG";
 
-  static Future<bool> testPayment() async {
+  static Future<String?> createTestPaymentIntent({
+    required int amount,
+    String currency = 'USD',
+  }) async {
     try {
-      // Initialize PaymentSheet
+      final response = await http.post(
+        Uri.parse('https://api.stripe.com/v1/payment_intents'),
+        headers: {
+          'Authorization': 'Bearer $_testSecretToken',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'amount': amount.toString(),
+          'currency': currency,
+          'automatic_payment_methods[enabled]': 'true',
+        },
+      );
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        return jsonResponse['client_secret'] as String?;
+      } else {
+        debugPrint('Stripe error : ${response.statusCode} -> ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Exception creating paymentIntent: $e');
+      return null;
+    }
+  }
+
+  static Future<void> showPaymentSheet({
+    required BuildContext context,
+    required String clientSecret,
+    String merchantName = 'Navakarna',
+  }) async {
+    try {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: testClientSecret,
-          merchantDisplayName: 'Navakarna',
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: merchantName,
         ),
       );
-
-      // Present PaymentSheet
       await Stripe.instance.presentPaymentSheet();
-      debugPrint('✅ Test payment success');
-      return true;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Payment successful (test mode)')),
+        );
+      }
     } on StripeException catch (e) {
-      debugPrint('❌ Stripe error: ${e.error.localizedMessage}');
-      return false;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${e.error.localizedMessage}'),
+          ),
+        );
+      }
     } catch (e) {
-      debugPrint('❌ Payment failed: $e');
-      return false;
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 }

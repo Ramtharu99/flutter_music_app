@@ -21,7 +21,7 @@ void main() async {
       "sk_test_51Srg46Qkp33zQdtFrxFEnr1vByMX6jSoCHWv51SvgUAMaKTOiQYgnaKqstOdA75kfoFwnrt6c5EGkdg6AwtoRHtA00Ovbnq8mG";
 
   Stripe.publishableKey = stripe_public_key;
-
+  await Stripe.instance.applySettings();
   await GetStorage.init();
 
   Get.put(ConnectivityService(), permanent: true);

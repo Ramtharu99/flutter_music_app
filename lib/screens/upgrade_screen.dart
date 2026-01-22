@@ -17,35 +17,25 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   PaymentModel currentUser = PaymentModel(userEmail: 'user@example.com');
   bool isLoading = false;
 
-  Future<void> _pay() async {
+  Future<void> _handlePayment() async {
     setState(() => isLoading = true);
 
-    final success = await PaymentService.testPayment();
-
-    if (success) {
-      setState(() => currentUser.isPaid = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.green,
-          content: Text(
-            'Payment success',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
+    final clientSecret = await PaymentService.createTestPaymentIntent(
+      amount: 1000,
+      currency: 'USd',
+    );
+    if (clientSecret != null && mounted) {
+      await PaymentService.showPaymentSheet(
+        context: context,
+        clientSecret: clientSecret,
+        merchantName: 'Navakarna Test',
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            'Payment failed',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create paymentIntent')));
     }
-
-    setState(() => isLoading = false);
+    if (mounted) setState(() => isLoading = false);
   }
 
   @override
@@ -240,7 +230,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       width: double.infinity,
       height: 55,
       child: ElevatedButton(
-        onPressed: isLoading ? null : _pay,
+        onPressed: isLoading ? null : _handlePayment,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryColor,
           shape: RoundedRectangleBorder(
