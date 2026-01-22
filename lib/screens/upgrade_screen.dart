@@ -31,9 +31,25 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         merchantName: 'Navakarna Test',
       );
     } else if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to create paymentIntent')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Failed to create paymentIntent',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            'Payment success (test mode)',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
     }
     if (mounted) setState(() => isLoading = false);
   }
