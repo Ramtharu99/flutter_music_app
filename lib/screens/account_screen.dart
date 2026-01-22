@@ -87,88 +87,16 @@ class _AccountScreenState extends State<AccountScreen> {
     final success = await _authController.refreshUserProfile();
     if (success && mounted) {
       _initializeControllers();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile refreshed')));
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _phoneController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('All fields are required')));
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await _apiService.updateProfile(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-      );
-
-      if (response.success && response.data != null) {
-        _authController.updateCurrentUser(response.data!);
-
-        if (mounted) {
-          setState(() {
-            _isEditing = false;
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  SizedBox(width: 12),
-                  Text('Profile updated successfully'),
-                ],
-              ),
-              backgroundColor: Colors.green[600],
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.message ?? 'Failed to update profile'),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            duration: const Duration(seconds: 3),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            'Profile refreshed',
+            style: TextStyle(color: Colors.white),
           ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+        ),
+      );
     }
-  }
-
-  void _cancelEditing() {
-    _initializeControllers();
-    setState(() {
-      _isEditing = false;
-    });
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -230,26 +158,39 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await _authController.logout();
-                      Get.offAll(() => const SignInScreen());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Obx(
+                    () => ElevatedButton(
+                      onPressed: _authController.isLoading
+                          ? null
+                          : () async {
+                              await _authController.logout();
+                              Get.offAll(() => SignInScreen());
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      child: _authController.isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Logout',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -273,7 +214,6 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         child: Column(
           children: [
-            // Profile Image only, no camera button
             CircleAvatar(
               radius: 50,
               backgroundColor: Colors.grey.shade800,

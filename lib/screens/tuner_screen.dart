@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/screens/account_screen.dart';
@@ -93,10 +92,7 @@ class _TunerScreenState extends State<TunerScreen> {
             icon: const Icon(Icons.search, color: Colors.white),
           ),
           IconButton(
-            onPressed: () async {
-              await Get.find<AuthController>().fetchProfile();
-              Get.to(() => const AccountScreen());
-            },
+            onPressed: () => Get.to(() => AccountScreen()),
             icon: const Icon(Icons.person, color: Colors.white),
           ),
         ],
