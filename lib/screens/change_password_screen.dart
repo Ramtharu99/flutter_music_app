@@ -122,7 +122,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   isPassword: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Re-enter your new password';
+                      return 'Re-enter new password';
                     }
                     if (value != _newPasswordController.text) {
                       return 'Passwords do not match';

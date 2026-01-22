@@ -48,7 +48,6 @@ class _ProfileFormState extends State<ProfileForm> {
       Get.snackbar('Error', 'Name cannot be empty');
       return;
     }
-
     if (_emailController.text.isEmpty) {
       Get.snackbar('Error', 'Email cannot be empty');
       return;
@@ -60,13 +59,22 @@ class _ProfileFormState extends State<ProfileForm> {
 
     try {
       final response = await _apiService.updateProfile(
-        name: _nameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text.isEmpty ? null : _phoneController.text,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.isEmpty
+            ? null
+            : _phoneController.text.trim(),
       );
 
       if (response.success && response.data != null) {
+        // Update current user
         _authController.updateCurrentUser(response.data!);
+
+        // Refresh the form fields
+        _nameController.text = response.data!.fullName;
+        _emailController.text = response.data!.email;
+        _phoneController.text = response.data!.phone ?? '';
+
         Get.snackbar(
           'Success',
           'Profile updated successfully',
@@ -99,102 +107,84 @@ class _ProfileFormState extends State<ProfileForm> {
 
   void _cancelEditing() {
     _initializeControllers();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Obx(() {
-        final user = _authController.currentUser;
-        if (user == null) {
-          return const Center(
-            child: Text(
-              'User not loaded',
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        }
-
-        return Column(
-          children: [
-            // Name Field
-            _buildInputField(
-              controller: _nameController,
-              labelText: 'Full Name',
-              icon: Icons.person_outline,
-            ),
-            const SizedBox(height: 16),
-
-            // Email Field
-            _buildInputField(
-              controller: _emailController,
-              labelText: 'Email',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-
-            // Phone Field
-            _buildInputField(
-              controller: _phoneController,
-              labelText: 'Phone Number',
-              icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 32),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isLoading ? null : _cancelEditing,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.white70),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+      child: Column(
+        children: [
+          _buildInputField(
+            controller: _nameController,
+            labelText: 'Full Name',
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            controller: _emailController,
+            labelText: 'Email',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            controller: _phoneController,
+            labelText: 'Phone Number',
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : _cancelEditing,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.white70),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Save Changes',
-                            style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
                           ),
-                  ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                 ),
-              ],
-            ),
-          ],
-        );
-      }),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -221,7 +211,6 @@ class _ProfileFormState extends State<ProfileForm> {
         prefixIcon: icon,
         controller: controller,
         enabled: true,
-        // Always editable
         keyboardType: keyboardType,
       ),
     );

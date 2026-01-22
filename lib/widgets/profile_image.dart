@@ -15,7 +15,7 @@ class ProfileImage extends StatefulWidget {
 }
 
 class _ProfileImageState extends State<ProfileImage> {
-  File? _imageFile; // Stores picked image
+  File? _imageFile; // Stores the picked image
   final ImagePicker _picker = ImagePicker();
   final AuthController _authController = Get.find<AuthController>();
   final ApiService _apiService = ApiService();
@@ -26,9 +26,10 @@ class _ProfileImageState extends State<ProfileImage> {
     return Center(
       child: Stack(
         children: [
-          // Profile picture
+          // Profile Picture
           Obx(() {
             final user = _authController.currentUser;
+
             final imageProvider = _imageFile != null
                 ? FileImage(_imageFile!) as ImageProvider
                 : (user?.profileImage != null && user!.profileImage!.isNotEmpty)
@@ -52,14 +53,14 @@ class _ProfileImageState extends State<ProfileImage> {
             );
           }),
 
-          // Camera icon
+          // Camera Icon
           Positioned(
             bottom: 0,
             right: 0,
             child: GestureDetector(
               onTap: () => _showImagePickerBottomSheet(context),
               child: Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppColors.primaryColor,
                   shape: BoxShape.circle,
@@ -72,7 +73,7 @@ class _ProfileImageState extends State<ProfileImage> {
                   ],
                 ),
                 child: _isUploading
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
@@ -80,7 +81,11 @@ class _ProfileImageState extends State<ProfileImage> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                    : const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 20,
+                      ),
               ),
             ),
           ),
@@ -89,7 +94,7 @@ class _ProfileImageState extends State<ProfileImage> {
     );
   }
 
-  // Bottom sheet
+  // Show bottom sheet to pick image
   void _showImagePickerBottomSheet(BuildContext context) {
     Get.bottomSheet(
       Container(
@@ -126,8 +131,6 @@ class _ProfileImageState extends State<ProfileImage> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Take Photo
             _buildOptionTile(
               context,
               'Take Photo',
@@ -138,8 +141,6 @@ class _ProfileImageState extends State<ProfileImage> {
               },
             ),
             const SizedBox(height: 12),
-
-            // Choose From Gallery
             _buildOptionTile(
               context,
               'Choose From Gallery',
@@ -158,7 +159,7 @@ class _ProfileImageState extends State<ProfileImage> {
     );
   }
 
-  // Option tile UI
+  // Option tile for bottom sheet
   Widget _buildOptionTile(
     BuildContext context,
     String title,
@@ -186,7 +187,7 @@ class _ProfileImageState extends State<ProfileImage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: 0.1),
+                color: AppColors.primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: AppColors.primaryColor, size: 24),
@@ -200,7 +201,7 @@ class _ProfileImageState extends State<ProfileImage> {
                 color: Theme.of(context).textTheme.bodyLarge!.color,
               ),
             ),
-            Spacer(),
+            const Spacer(),
             Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
           ],
         ),
@@ -221,7 +222,6 @@ class _ProfileImageState extends State<ProfileImage> {
         setState(() {
           _imageFile = File(pickedFile.path);
         });
-        // Upload the image
         await _uploadProfileImage(pickedFile.path);
       }
     } catch (e) {
@@ -230,7 +230,7 @@ class _ProfileImageState extends State<ProfileImage> {
     }
   }
 
-  // Upload profile image to server
+  // Upload image to backend
   Future<void> _uploadProfileImage(String imagePath) async {
     setState(() {
       _isUploading = true;
@@ -240,14 +240,17 @@ class _ProfileImageState extends State<ProfileImage> {
       final response = await _apiService.uploadProfileImage(imagePath);
 
       if (response.success && response.data != null) {
-        // Update the current user in auth controller
+        // Update AuthController user
         _authController.updateCurrentUser(response.data!);
+        setState(() {
+          _imageFile = null; // now use network image
+        });
         Get.snackbar(
           'Success',
           'Profile image updated successfully',
           backgroundColor: Colors.green,
           colorText: Colors.white,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         );
       } else {
         Get.snackbar(
@@ -256,10 +259,6 @@ class _ProfileImageState extends State<ProfileImage> {
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
-        // Reset the image
-        setState(() {
-          _imageFile = null;
-        });
       }
     } catch (e) {
       debugPrint('Upload error: $e');
@@ -269,10 +268,6 @@ class _ProfileImageState extends State<ProfileImage> {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-      // Reset the image
-      setState(() {
-        _imageFile = null;
-      });
     } finally {
       setState(() {
         _isUploading = false;
