@@ -250,6 +250,7 @@ class _ProfileImageState extends State<ProfileImage> {
           colorText: Colors.white,
           duration: const Duration(seconds: 2),
         );
+        Get.back();
       } else {
         Get.snackbar(
           'Error',

@@ -26,6 +26,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Scan your card to add it automatically</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to take profile picture</string>
+	<key>NCPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to select profile picture</string>
 	
 	<!-- Background Modes for audio playback -->
 	<key>UIBackgroundModes</key>
