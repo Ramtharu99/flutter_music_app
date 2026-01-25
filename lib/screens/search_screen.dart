@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/music_controller.dart';
@@ -25,10 +28,19 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isSearching = false;
   String? _errorMessage;
 
+  Timer? _debounce;
+
   @override
   void initState() {
     super.initState();
     _loadRecentSearches();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
   }
 
   void _loadRecentSearches() {
@@ -36,47 +48,52 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {});
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  // Debounce function
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      final trimmedQuery = query.trim();
+      if (trimmedQuery.length >= 2) {
+        _performSearch(trimmedQuery);
+      } else {
+        setState(() {
+          _searchResults = [];
+          _errorMessage = null;
+        });
+      }
+    });
   }
 
   Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty) {
-      setState(() {
-        _searchResults = [];
-        _errorMessage = null;
-      });
-      return;
-    }
-
     setState(() {
       _isSearching = true;
       _errorMessage = null;
     });
 
-    // Save to recent searches
+    // Save recent searches
     await _offlineStorage.addRecentSearch(query);
     _recentSearches = _offlineStorage.getRecentSearches();
 
     if (_connectivityService.isOnline) {
-      // Online: Search via API
       try {
         final response = await _apiService.searchSongs(query);
-        if (response.success && response.data != null) {
+        if (response.success &&
+            response.data != null &&
+            response.data!.isNotEmpty) {
           _searchResults = response.data!;
+          _errorMessage = null;
         } else {
-          _errorMessage = response.message;
-          // Fallback to local search
+          _searchResults = [];
+          _errorMessage = 'No results found';
           _searchLocally(query);
         }
       } catch (e) {
+        _searchResults = [];
         _errorMessage = 'Search failed';
         _searchLocally(query);
       }
     } else {
-      // Offline: Search local data
       _searchLocally(query);
     }
 
@@ -84,23 +101,31 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _searchLocally(String query) {
-    // Search in cached and downloaded songs
+    final trimmedQuery = removeDiacritics(query.toLowerCase());
     final cachedSongs = _offlineStorage.getCachedSongs();
     final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
     final allSongs = [...cachedSongs, ...downloadedSongs];
+
+    // Use Map to ensure uniqueness
     final uniqueSongs = <int, Song>{};
     for (final song in allSongs) {
       uniqueSongs[song.id] = song;
     }
 
-    _searchResults = uniqueSongs.values.where((song) {
-      final titleMatch = song.title.toLowerCase().contains(query.toLowerCase());
-      final artistMatch = song.artist.toLowerCase().contains(
-        query.toLowerCase(),
-      );
-      return titleMatch || artistMatch;
+    final results = uniqueSongs.values.where((song) {
+      final title = removeDiacritics(song.title.toLowerCase());
+      final artist = removeDiacritics(song.artist.toLowerCase());
+      return title.contains(trimmedQuery) || artist.contains(trimmedQuery);
     }).toList();
+
+    if (results.isEmpty) {
+      _errorMessage = 'No results found';
+    } else {
+      _errorMessage = null;
+    }
+
+    _searchResults = results;
   }
 
   @override
@@ -161,24 +186,17 @@ class _SearchScreenState extends State<SearchScreen> {
                             _searchController.clear();
                             setState(() {
                               _searchResults = [];
+                              _errorMessage = null;
                             });
                           },
                         )
                       : null,
                 ),
-                onChanged: (value) {
-                  setState(() {});
-                  if (value.length >= 2) {
-                    _performSearch(value);
-                  }
-                },
+                onChanged: _onSearchChanged,
                 onSubmitted: _performSearch,
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Content
             Expanded(child: _buildContent()),
           ],
         ),
@@ -188,7 +206,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildContent() {
     if (_searchController.text.isEmpty) {
-      // Show recent searches
       return _buildRecentSearches();
     }
 
@@ -196,29 +213,15 @@ class _SearchScreenState extends State<SearchScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_errorMessage != null && _searchResults.isEmpty) {
+    if (_errorMessage != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, color: Colors.grey.shade400, size: 48),
-            const SizedBox(height: 16),
-            Text(_errorMessage!, style: const TextStyle(color: Colors.grey)),
-          ],
-        ),
-      );
-    }
-
-    if (_searchResults.isEmpty) {
-      return const Center(
         child: Text(
-          "No results found",
-          style: TextStyle(color: Colors.grey, fontSize: 16),
+          _errorMessage!,
+          style: const TextStyle(color: Colors.grey, fontSize: 16),
         ),
       );
     }
 
-    // Show search results
     return ListView.builder(
       itemCount: _searchResults.length,
       itemBuilder: (context, index) {
@@ -339,7 +342,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildSongImage(Song song) {
     final imageUrl = song.coverImage;
-
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return Image.network(
         imageUrl,
@@ -349,7 +351,6 @@ class _SearchScreenState extends State<SearchScreen> {
         errorBuilder: (context, error, stackTrace) => _placeholderImage(),
       );
     }
-
     return Image.asset(
       imageUrl.isNotEmpty ? imageUrl : 'assets/images/logo.png',
       width: 50,
