@@ -4,6 +4,7 @@ import 'package:music_app/models/payment_model.dart';
 import 'package:music_app/screens/account_screen.dart';
 import 'package:music_app/services/payment_service.dart';
 import 'package:music_app/utils/app_colors.dart';
+import 'package:music_app/widgets/benefit_item.dart';
 
 class UpgradeScreen extends StatefulWidget {
   const UpgradeScreen({super.key});
@@ -135,9 +136,9 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
           ),
         ),
         SizedBox(height: 15),
-        _BenefitItem(icon: Icons.music_note, text: 'Unlimited songs'),
-        _BenefitItem(icon: Icons.block, text: 'No ads'),
-        _BenefitItem(icon: Icons.high_quality, text: 'High quality audio'),
+        BenefitItem(icon: Icons.music_note, text: 'Unlimited songs'),
+        BenefitItem(icon: Icons.block, text: 'No ads'),
+        BenefitItem(icon: Icons.high_quality, text: 'High quality audio'),
       ],
     );
   }
@@ -275,30 +276,6 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
           'Restore Purchase',
           style: TextStyle(color: Colors.white54),
         ),
-      ),
-    );
-  }
-}
-
-class _BenefitItem extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _BenefitItem({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.deepPurple),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: const TextStyle(color: Colors.white70, fontSize: 15),
-          ),
-        ],
       ),
     );
   }
