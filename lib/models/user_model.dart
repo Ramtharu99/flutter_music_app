@@ -5,6 +5,7 @@ class User {
   final String? profileImage;
   final String? phone;
   final bool isPremium;
+  final String? token;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -15,6 +16,7 @@ class User {
     this.profileImage,
     this.phone,
     this.isPremium = false,
+    this.token,
     this.createdAt,
     this.updatedAt,
   });
@@ -36,6 +38,8 @@ class User {
       profileImage: json['profile_image'] ?? json['avatar'],
       phone: json['phone']?.toString(),
       isPremium: json['is_premium'] ?? json['isPremium'] ?? false,
+      token: json['token']?.toString(),
+      // <-- load token
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -53,6 +57,7 @@ class User {
       'profile_image': profileImage,
       'phone': phone,
       'is_premium': isPremium,
+      'token': token, // <-- save token
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -65,6 +70,7 @@ class User {
     String? profileImage,
     String? phone,
     bool? isPremium,
+    String? token,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -75,6 +81,8 @@ class User {
       profileImage: profileImage ?? this.profileImage,
       phone: phone ?? this.phone,
       isPremium: isPremium ?? this.isPremium,
+      token: token ?? this.token,
+
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

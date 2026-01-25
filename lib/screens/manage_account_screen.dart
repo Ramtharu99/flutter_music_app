@@ -14,124 +14,193 @@ class ManageAccountScreen extends StatefulWidget {
 
 class _ManageAccountScreenState extends State<ManageAccountScreen> {
   final AuthController _authController = Get.find<AuthController>();
+  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-        ),
         backgroundColor: Colors.black,
-        title: Text('Manage Account', style: TextStyle(color: Colors.white)),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+          ),
+          onPressed: () => Get.back(),
+        ),
+        title: const Text(
+          'Manage Account',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: Column(children: [_buildMenuSection(context)]),
-      ),
-    );
-  }
-
-  Widget _buildMenuSection(BuildContext context) {
-    final menuItems = [
-      {'icon': Icons.person, 'title': 'Change Password'},
-      {'icon': Icons.delete, 'title': 'Delete Account'},
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: menuItems.map((item) {
-          final isLogout = item['title'] == 'Logout';
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade900,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: Icon(
-                item['icon'] as IconData,
-                color: isLogout ? Colors.red : AppColors.primaryColor,
-              ),
-              title: Text(
-                item['title'] as String,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isLogout ? Colors.red : Colors.white,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // You can add real refresh logic here later (e.g. reload user profile)
+          await Future.delayed(const Duration(milliseconds: 800));
+          if (mounted) {
+            setState(() {}); // just for demo refresh animation
+          }
+        },
+        color: AppColors.primaryColor,
+        backgroundColor: Colors.grey.shade900,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Account Settings'),
+                    const SizedBox(height: 12),
+                    _buildMenuCard(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Change Password',
+                      onTap: () => Get.to(() => const ChangePasswordScreen()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuCard(
+                      icon: Icons.person_remove_rounded,
+                      title: 'Delete Account',
+                      color: Colors.redAccent,
+                      onTap: () => _showDeleteAccountDialog(),
+                    ),
+                    const Spacer(),
+                    // Optional: you can add more sections or a version footer
+                    // Center(
+                    //   child: Text(
+                    //     'App version 1.2.3',
+                    //     style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 24),
+                  ],
                 ),
               ),
-              trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
-              onTap: () {
-                if (item['title'] == 'Change Password') {
-                  Get.to(() => ChangePasswordScreen());
-                } else if (item['title'] == 'Delete Account') {
-                  _showDeleteAccountDialog(context);
-                }
-              },
             ),
-          );
-        }).toList(),
+          ],
+        ),
       ),
     );
   }
 
-  void _showDeleteAccountDialog(BuildContext context) {
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          color: Colors.grey[500],
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    final isDestructive = color != null;
+    final tileColor = isDestructive ? color : AppColors.primaryColor;
+
+    return Material(
+      color: Colors.grey.shade900,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        minLeadingWidth: 24,
+        leading: Icon(icon, color: tileColor, size: 26),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isDestructive ? Colors.redAccent : Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right_rounded, color: Colors.grey[600]),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog() {
     Get.dialog(
       AlertDialog(
         backgroundColor: Colors.grey.shade900,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 20,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 20),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
+                color: Colors.red.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.delete_forever,
-                color: Colors.red,
-                size: 32,
+                Icons.warning_amber_rounded,
+                color: Colors.redAccent,
+                size: 40,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             const Text(
-              'Are you sure you want to delete account',
+              'Delete Account',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action is permanent and cannot be undone. All your data will be lost.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[400],
+                height: 1.4,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Get.back(),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: Colors.grey[600]!),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: Colors.grey[700]!),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 16,
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -139,23 +208,35 @@ class _ManageAccountScreenState extends State<ManageAccountScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _handleDeleteAccount,
+                    onPressed: _isDeleting ? null : _handleDeleteAccount,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: Colors.redAccent,
+                      disabledBackgroundColor: Colors.redAccent.withOpacity(
+                        0.6,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text(
-                      'Delete',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _isDeleting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Delete',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -166,26 +247,41 @@ class _ManageAccountScreenState extends State<ManageAccountScreen> {
     );
   }
 
-  void _handleDeleteAccount() async {
+  Future<void> _handleDeleteAccount() async {
+    setState(() => _isDeleting = true);
+    Get.back(); // close dialog
+
     final success = await _authController.deleteAccount();
+
+    setState(() => _isDeleting = false);
+
+    if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           content: Text(
-            'Your account deleted successfully',
+            'Account deleted successfully',
             style: TextStyle(color: Colors.white),
           ),
         ),
       );
-      Get.to(() => SignupScreen());
+      Get.offAll(() => const SignupScreen());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
+        const SnackBar(
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           content: Text(
-            'Failed to delete your account',
+            'Failed to delete account. Please try again.',
             style: TextStyle(color: Colors.white),
           ),
         ),

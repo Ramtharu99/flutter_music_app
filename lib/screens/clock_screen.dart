@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/screens/account_screen.dart';
+import 'package:music_app/widgets/bottom_player.dart';
 
 class ClockScreen extends StatefulWidget {
   const ClockScreen({super.key});
@@ -124,6 +125,7 @@ class _ClockScreenState extends State<ClockScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: BottomPlayer(),
     );
   }
 }

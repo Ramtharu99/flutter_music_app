@@ -26,7 +26,7 @@ class _AccountScreenState extends State<AccountScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  bool _isEditing = false;
+
   bool _isLoading = false;
 
   @override
@@ -36,13 +36,17 @@ class _AccountScreenState extends State<AccountScreen> {
     _loadUserData();
   }
 
-  /// Load current user data from server
+  void _initializeControllers() {
+    final user = _authController.currentUser;
+    _nameController = TextEditingController(text: user?.fullName ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+  }
+
   Future<void> _loadUserData() async {
     if (_connectivityService.isOffline) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final response = await _apiService.getProfile();
@@ -53,27 +57,8 @@ class _AccountScreenState extends State<AccountScreen> {
     } catch (e) {
       debugPrint('Error loading profile: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _initializeControllers() {
-    final user = _authController.currentUser;
-    _nameController = TextEditingController(text: user?.fullName ?? '');
-    _emailController = TextEditingController(text: user?.email ?? '');
-    _phoneController = TextEditingController(text: user?.phone ?? '');
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    super.dispose();
   }
 
   Future<void> _onRefresh() async {
@@ -99,7 +84,7 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog() {
     Get.dialog(
       AlertDialog(
         backgroundColor: Colors.grey.shade900,
@@ -164,7 +149,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           ? null
                           : () async {
                               await _authController.logout();
-                              Get.offAll(() => SignInScreen());
+                              Get.offAll(() => const SignInScreen());
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
@@ -202,7 +187,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildProfileSection(BuildContext context) {
+  Widget _buildProfileSection() {
     return Obx(() {
       final user = _authController.currentUser;
 
@@ -217,9 +202,7 @@ class _AccountScreenState extends State<AccountScreen> {
             CircleAvatar(
               radius: 50,
               backgroundColor: Colors.grey.shade800,
-              backgroundImage:
-                  (user?.profileImage != null &&
-                      (user?.profileImage ?? '').isNotEmpty)
+              backgroundImage: (user?.profileImage?.isNotEmpty ?? false)
                   ? NetworkImage(user!.profileImage!)
                   : null,
               child:
@@ -229,8 +212,6 @@ class _AccountScreenState extends State<AccountScreen> {
                   : null,
             ),
             const SizedBox(height: 18),
-
-            // Name
             Text(
               user?.name ?? 'Guest User',
               style: const TextStyle(
@@ -240,23 +221,17 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
             const SizedBox(height: 8),
-
-            // Email
             Text(
               user?.email ?? 'No email',
               style: const TextStyle(fontSize: 12, color: Colors.white70),
             ),
-
-            // Phone (if available)
-            if (user?.phone != null && (user?.phone ?? '').isNotEmpty) ...[
+            if (user?.phone?.isNotEmpty ?? false) ...[
               const SizedBox(height: 4),
               Text(
                 user?.phone ?? '',
                 style: const TextStyle(fontSize: 11, color: Colors.white54),
               ),
             ],
-
-            // Premium badge
             if (user?.isPremium == true) ...[
               const SizedBox(height: 12),
               Container(
@@ -285,10 +260,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
             ],
-
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => Get.to(() => EditProfileScreen()),
+              onPressed: () => Get.to(() => const EditProfileScreen()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryColor,
                 padding: const EdgeInsets.symmetric(
@@ -310,7 +284,7 @@ class _AccountScreenState extends State<AccountScreen> {
     });
   }
 
-  Widget _buildMenuSection(BuildContext context) {
+  Widget _buildMenuSection() {
     final menuItems = [
       {'icon': Icons.person, 'title': 'Manage Account'},
       {'icon': Icons.download_done, 'title': 'Downloaded Songs'},
@@ -345,7 +319,7 @@ class _AccountScreenState extends State<AccountScreen> {
               trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
               onTap: () {
                 if (item['title'] == 'Logout') {
-                  _showLogoutDialog(context);
+                  _showLogoutDialog();
                 } else if (item['title'] == 'Help Center') {
                   Get.to(() => const HelpCenterScreen());
                 } else if (item['title'] == 'Downloaded Songs') {
@@ -397,9 +371,9 @@ class _AccountScreenState extends State<AccountScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
-                  _buildProfileSection(context),
+                  _buildProfileSection(),
                   const SizedBox(height: 24),
-                  _buildMenuSection(context),
+                  _buildMenuSection(),
                 ],
               ),
             ),

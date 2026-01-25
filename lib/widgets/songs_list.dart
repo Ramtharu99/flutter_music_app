@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music_app/controllers/music_controller.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/services/offline_storage_service.dart';
@@ -12,12 +11,14 @@ class SongsList extends StatelessWidget {
   final List<Song> songs;
   final OfflineStorageService offlineStorageService;
   final ConnectivityService connectivityService;
+  final Function(Song) onSongTap;
 
   const SongsList({
     super.key,
     required this.songs,
     required this.offlineStorageService,
     required this.connectivityService,
+    required this.onSongTap,
   });
 
   @override
@@ -34,7 +35,7 @@ class SongsList extends StatelessWidget {
     return Column(
       children: songs.map((song) {
         return MusicListTile(
-          image: song.coverImage.startsWith('http')
+          image: song.coverImage.isNotEmpty
               ? song.coverImage
               : 'assets/images/logo.png',
           title: song.title,
@@ -48,13 +49,7 @@ class SongsList extends StatelessWidget {
               );
               return;
             }
-
-            MusicController.playFromUrl(
-              url: song.localPath ?? song.fileUrl!,
-              title: song.title,
-              artist: song.artist,
-              imageUrl: song.coverImage,
-            );
+            onSongTap(song);
           },
           onMoreTap: (position) {
             SongMenu.show(context, position, song, offlineStorageService);

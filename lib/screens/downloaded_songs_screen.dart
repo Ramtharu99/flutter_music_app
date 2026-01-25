@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/services/connectivity_service.dart';
+import 'package:music_app/services/offline_storage_service.dart';
 import 'package:music_app/utils/app_colors.dart';
 
 import '../controllers/download_controller.dart';
@@ -17,6 +18,7 @@ class _DownloadedSongsScreenState extends State<DownloadedSongsScreen> {
   final DownloadController downloadController = DownloadController();
   final ConnectivityService _connectivityService =
       Get.find<ConnectivityService>();
+  final OfflineStorageService _offlineStorageService = OfflineStorageService();
 
   Future<void> _onRefresh() async {
     if (_connectivityService.isOffline) return;

@@ -105,56 +105,33 @@ class _ProfileFormState extends State<ProfileForm> {
     }
   }
 
-  void _cancelEditing() {
-    _initializeControllers();
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          _buildInputField(
-            controller: _nameController,
+          CustomTextField(
             labelText: 'Full Name',
-            icon: Icons.person_outline,
+            controller: _nameController,
+            prefixIcon: Icons.person,
           ),
           const SizedBox(height: 16),
-          _buildInputField(
-            controller: _emailController,
+          CustomTextField(
             labelText: 'Email',
-            icon: Icons.email_outlined,
-            keyboardType: TextInputType.emailAddress,
+            controller: _emailController,
+            prefixIcon: Icons.email,
+            enabled: false,
           ),
           const SizedBox(height: 16),
-          _buildInputField(
-            controller: _phoneController,
+          CustomTextField(
             labelText: 'Phone Number',
-            icon: Icons.phone_outlined,
-            keyboardType: TextInputType.phone,
+            controller: _phoneController,
+            prefixIcon: Icons.phone,
           ),
           const SizedBox(height: 32),
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : _cancelEditing,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Colors.white70),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveProfile,
@@ -184,34 +161,6 @@ class _ProfileFormState extends State<ProfileForm> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String labelText,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: CustomTextField(
-        labelText: labelText,
-        prefixIcon: icon,
-        controller: controller,
-        enabled: true,
-        keyboardType: keyboardType,
       ),
     );
   }

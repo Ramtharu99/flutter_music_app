@@ -15,7 +15,7 @@ class ProfileImage extends StatefulWidget {
 }
 
 class _ProfileImageState extends State<ProfileImage> {
-  File? _imageFile; // Stores the picked image
+  File? _imageFile;
   final ImagePicker _picker = ImagePicker();
   final AuthController _authController = Get.find<AuthController>();
   final ApiService _apiService = ApiService();
@@ -26,7 +26,6 @@ class _ProfileImageState extends State<ProfileImage> {
     return Center(
       child: Stack(
         children: [
-          // Profile Picture
           Obx(() {
             final user = _authController.currentUser;
 
@@ -240,10 +239,9 @@ class _ProfileImageState extends State<ProfileImage> {
       final response = await _apiService.uploadProfileImage(imagePath);
 
       if (response.success && response.data != null) {
-        // Update AuthController user
         _authController.updateCurrentUser(response.data!);
         setState(() {
-          _imageFile = null; // now use network image
+          _imageFile = null;
         });
         Get.snackbar(
           'Success',

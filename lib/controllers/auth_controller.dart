@@ -232,6 +232,13 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<void> switchAccount(User account) async {
+    try {
+      _currentUser.value = account;
+      ApiClient().authToken = account.token ?? '';
+    } catch (e) {}
+  }
+
   Future<void> fetchProfile({int retryCount = 0}) async {
     debugPrint(
       '\n🔐 [AUTH CONTROLLER] fetchProfile() called (attempt ${retryCount + 1})',

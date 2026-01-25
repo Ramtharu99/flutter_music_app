@@ -61,7 +61,7 @@ class _TunerScreenState extends State<TunerScreen> {
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
-    // Get downloaded songs (local files)
+    // All downloaded songs
     final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
     // Get all songs from API or cache
@@ -78,18 +78,32 @@ class _TunerScreenState extends State<TunerScreen> {
       allSongs = _offlineStorage.getCachedSongs();
     }
 
-    // Update offlineSongs: only include downloaded songs not duplicated in allSongs
     offlineSongs = downloadedSongs
         .where((d) => allSongs.every((s) => s.id != d.id))
+        .map((song) {
+          return song.copyWith(
+            coverImage: song.coverImage.isNotEmpty
+                ? song.coverImage
+                : song.coverImage,
+          );
+        })
         .toList();
 
-    // Featured songs: first 5 songs from allSongs
+    // Featured songs: first 5 songs
     featuredSongs = allSongs.take(5).toList();
 
-    // Update main songs list
     songs = allSongs;
 
     setState(() => isLoading = false);
+  }
+
+  /// Play a song using MusicController
+  void _playSong(Song song) {
+    if (song.fileUrl != null && song.fileUrl!.isNotEmpty) {
+      MusicController.playFromSong(song);
+    } else {
+      debugPrint('this song has not file url');
+    }
   }
 
   @override
@@ -152,7 +166,7 @@ class _TunerScreenState extends State<TunerScreen> {
 
                 const SizedBox(height: 16),
 
-                /// PAGES (SWIPE LEFT / RIGHT)
+                /// PAGES
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -187,14 +201,7 @@ class _TunerScreenState extends State<TunerScreen> {
                                       image: song.coverImage,
                                       title: song.title,
                                       artist: song.artist,
-                                      onTap: () {
-                                        MusicController.playFromUrl(
-                                          url: song.fileUrl!,
-                                          title: song.title,
-                                          artist: song.artist,
-                                          imageUrl: song.coverImage,
-                                        );
-                                      },
+                                      onTap: () => _playSong(song),
                                     );
                                   },
                                 ),
@@ -209,6 +216,7 @@ class _TunerScreenState extends State<TunerScreen> {
                                 songs: songs,
                                 offlineStorageService: _offlineStorage,
                                 connectivityService: _connectivityService,
+                                onSongTap: _playSong,
                               ),
                             ],
                           ),
@@ -216,18 +224,21 @@ class _TunerScreenState extends State<TunerScreen> {
                       ),
 
                       /// SONGS PAGE
-                      RefreshIndicator(
-                        onRefresh: _loadData,
-                        color: AppColors.primaryColor,
-                        backgroundColor: Colors.black,
-                        child: SongsList(
-                          songs: songs,
-                          offlineStorageService: _offlineStorage,
-                          connectivityService: _connectivityService,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: RefreshIndicator(
+                          onRefresh: _loadData,
+                          color: AppColors.primaryColor,
+                          backgroundColor: Colors.black,
+                          child: SongsList(
+                            songs: songs,
+                            offlineStorageService: _offlineStorage,
+                            connectivityService: _connectivityService,
+                            onSongTap: _playSong,
+                          ),
                         ),
                       ),
 
-                      /// FREQUENCIES PAGE
                       const Center(
                         child: Text(
                           'Healing frequencies coming soon...',
@@ -249,6 +260,7 @@ class _TunerScreenState extends State<TunerScreen> {
                                 songs: offlineSongs,
                                 offlineStorageService: _offlineStorage,
                                 connectivityService: _connectivityService,
+                                onSongTap: _playSong,
                               ),
                             ),
                     ],
