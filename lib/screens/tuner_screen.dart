@@ -25,7 +25,8 @@ class TunerScreen extends StatefulWidget {
 }
 
 class _TunerScreenState extends State<TunerScreen> {
-  String selectedChip = 'All';
+  int selectedIndex = 0;
+  late PageController _pageController;
 
   final List<Map<String, dynamic>> chips = [
     {'label': 'All', 'icon': Icons.library_music},
@@ -47,25 +48,46 @@ class _TunerScreenState extends State<TunerScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
-    offlineSongs = _offlineStorage.getDownloadedSongs();
+    // Get downloaded songs (local files)
+    final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
+    // Get all songs from API or cache
+    List<Song> allSongs;
     if (_connectivityService.isOnline) {
       final response = await _apiService.getSongs();
       if (response.success && response.data != null) {
-        songs = response.data!;
-        _offlineStorage.cacheSongs(songs);
-        featuredSongs = songs.take(5).toList();
+        allSongs = response.data!;
+        _offlineStorage.cacheSongs(allSongs);
+      } else {
+        allSongs = _offlineStorage.getCachedSongs();
       }
     } else {
-      songs = _offlineStorage.getCachedSongs();
-      featuredSongs = songs.take(5).toList();
+      allSongs = _offlineStorage.getCachedSongs();
     }
+
+    // Update offlineSongs: only include downloaded songs not duplicated in allSongs
+    offlineSongs = downloadedSongs
+        .where((d) => allSongs.every((s) => s.id != d.id))
+        .toList();
+
+    // Featured songs: first 5 songs from allSongs
+    featuredSongs = allSongs.take(5).toList();
+
+    // Update main songs list
+    songs = allSongs;
 
     setState(() => isLoading = false);
   }
@@ -99,108 +121,140 @@ class _TunerScreenState extends State<TunerScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              color: AppColors.primaryColor,
-              backgroundColor: Colors.black,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // CHIPS
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: chips.map((chip) {
-                          return ChipWidget(
-                            label: chip['label'],
-                            icon: chip['icon'],
-                            isSelected: selectedChip == chip['label'],
-                            onTap: () {
-                              setState(() {
-                                selectedChip = chip['label'];
-                              });
-                            },
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+
+                /// CHIPS
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: List.generate(chips.length, (index) {
+                      final chip = chips[index];
+                      return ChipWidget(
+                        label: chip['label'],
+                        icon: chip['icon'],
+                        isSelected: selectedIndex == index,
+                        onTap: () {
+                          setState(() => selectedIndex = index);
+                          _pageController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
                           );
-                        }).toList(),
-                      ),
-                    ),
+                        },
+                      );
+                    }),
+                  ),
+                ),
 
-                    const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
-                    if (selectedChip == 'All') ...[
-                      SectionTitle(
-                        title: 'Featured',
-                        onMoreTap: () => Get.to(() => PlaylistScreen()),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: featuredSongs.length,
-                          itemBuilder: (_, index) {
-                            final song = featuredSongs[index];
-                            return MusicCard(
-                              image: song.coverImage,
-                              title: song.title,
-                              artist: song.artist,
-                              onTap: () {
-                                MusicController.playFromUrl(
-                                  url: song.fileUrl!,
-                                  title: song.title,
-                                  artist: song.artist,
-                                  imageUrl: song.coverImage,
-                                );
-                              },
-                            );
-                          },
+                /// PAGES (SWIPE LEFT / RIGHT)
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() => selectedIndex = index);
+                    },
+                    children: [
+                      /// ALL PAGE
+                      RefreshIndicator(
+                        onRefresh: _loadData,
+                        color: AppColors.primaryColor,
+                        backgroundColor: Colors.black,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SectionTitle(
+                                title: 'Featured',
+                                onMoreTap: () => Get.to(() => PlaylistScreen()),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 200,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: featuredSongs.length,
+                                  itemBuilder: (_, index) {
+                                    final song = featuredSongs[index];
+                                    return MusicCard(
+                                      image: song.coverImage,
+                                      title: song.title,
+                                      artist: song.artist,
+                                      onTap: () {
+                                        MusicController.playFromUrl(
+                                          url: song.fileUrl!,
+                                          title: song.title,
+                                          artist: song.artist,
+                                          imageUrl: song.coverImage,
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              SectionTitle(
+                                title: 'All Songs',
+                                onMoreTap: () =>
+                                    Get.to(() => SongsListScreen()),
+                              ),
+                              SongsList(
+                                songs: songs,
+                                offlineStorageService: _offlineStorage,
+                                connectivityService: _connectivityService,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      SectionTitle(
-                        title: 'All Songs',
-                        onMoreTap: () => Get.to(() => SongsListScreen()),
-                      ),
-                      SongsList(
-                        songs: songs,
-                        offlineStorageService: _offlineStorage,
-                        connectivityService: _connectivityService,
-                      ),
-                    ],
 
-                    if (selectedChip == 'Songs')
-                      SongsList(
-                        songs: songs,
-                        offlineStorageService: _offlineStorage,
-                        connectivityService: _connectivityService,
+                      /// SONGS PAGE
+                      RefreshIndicator(
+                        onRefresh: _loadData,
+                        color: AppColors.primaryColor,
+                        backgroundColor: Colors.black,
+                        child: SongsList(
+                          songs: songs,
+                          offlineStorageService: _offlineStorage,
+                          connectivityService: _connectivityService,
+                        ),
                       ),
 
-                    if (selectedChip == 'Frequencies') ...[
-                      const SectionTitle(title: 'Frequencies'),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Healing frequencies coming soon...',
-                        style: TextStyle(color: Colors.grey),
+                      /// FREQUENCIES PAGE
+                      const Center(
+                        child: Text(
+                          'Healing frequencies coming soon...',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
-                    ],
 
-                    if (selectedChip == 'Offline')
+                      /// OFFLINE PAGE
                       offlineSongs.isEmpty
                           ? const EmptyState(
                               title: 'No downloaded songs',
                               subtitle: 'Download songs to play offline',
                             )
-                          : SongsList(
-                              songs: offlineSongs,
-                              offlineStorageService: _offlineStorage,
-                              connectivityService: _connectivityService,
+                          : RefreshIndicator(
+                              onRefresh: _loadData,
+                              color: AppColors.primaryColor,
+                              backgroundColor: Colors.black,
+                              child: SongsList(
+                                songs: offlineSongs,
+                                offlineStorageService: _offlineStorage,
+                                connectivityService: _connectivityService,
+                              ),
                             ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
       bottomSheet: const BottomPlayer(),
     );
