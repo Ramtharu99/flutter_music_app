@@ -3,8 +3,8 @@ library;
 class ApiConfig {
   static const String baseUrl = 'https://music-api-qhag.onrender.com/api/v1';
 
-  static const Duration connectionTimeout = Duration(seconds: 60);
-  static const Duration receiveTimeout = Duration(seconds: 60);
+  static const Duration connectionTimeout = Duration(seconds: 15);
+  static const Duration receiveTimeout = Duration(seconds: 15);
 
   static const String login = '/login';
   static const String register = '/register';

@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
 
     // Wait for splash animation
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
 
@@ -49,6 +49,8 @@ class _SplashScreenState extends State<SplashScreen> {
     debugPrint('🚀 Navigation Decision:');
     debugPrint('   - Offline: $isOffline');
     debugPrint('   - Logged In: $isLoggedIn');
+
+    if (!mounted) return;
 
     if (isLoggedIn) {
       // User is logged in (works offline too!)

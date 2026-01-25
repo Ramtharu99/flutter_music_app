@@ -252,15 +252,20 @@ class _TunerScreenState extends State<TunerScreen> {
                               title: 'No downloaded songs',
                               subtitle: 'Download songs to play offline',
                             )
-                          : RefreshIndicator(
-                              onRefresh: _loadData,
-                              color: AppColors.primaryColor,
-                              backgroundColor: Colors.black,
-                              child: SongsList(
-                                songs: offlineSongs,
-                                offlineStorageService: _offlineStorage,
-                                connectivityService: _connectivityService,
-                                onSongTap: _playSong,
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: RefreshIndicator(
+                                onRefresh: _loadData,
+                                color: AppColors.primaryColor,
+                                backgroundColor: Colors.black,
+                                child: SongsList(
+                                  songs: offlineSongs,
+                                  offlineStorageService: _offlineStorage,
+                                  connectivityService: _connectivityService,
+                                  onSongTap: _playSong,
+                                ),
                               ),
                             ),
                     ],

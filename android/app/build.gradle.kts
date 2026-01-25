@@ -29,7 +29,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // 🔑 Path to your release keystore
             storeFile = file("key/my-release-key.jks")
             storePassword = "your-store-password"
             keyAlias = "my-key-alias"
@@ -38,8 +37,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        
         release {
-            // 🔑 Use release signing config
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false

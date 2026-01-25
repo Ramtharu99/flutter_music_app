@@ -53,7 +53,7 @@ class PaymentService {
       await Stripe.instance.presentPaymentSheet();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment successful (test mode)')),
+          const SnackBar(content: Text('Payment successful (test mode)')),
         );
       }
     } on StripeException catch (e) {

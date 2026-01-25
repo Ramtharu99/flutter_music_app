@@ -17,19 +17,28 @@ void main() async {
   String stripe_public_key =
       "pk_test_51Srg46Qkp33zQdtFE7kisbGhP0dvFrrryDzy2xxOaOynjDJuIHObTTQu4nbYJr3Y9fpYiYpGWFTC83dCkeZ6nrx9006L71x6iA";
 
-  String stripe_secret_key =
-      "sk_test_51Srg46Qkp33zQdtFrxFEnr1vByMX6jSoCHWv51SvgUAMaKTOiQYgnaKqstOdA75kfoFwnrt6c5EGkdg6AwtoRHtA00Ovbnq8mG";
-
   Stripe.publishableKey = stripe_public_key;
-  await Stripe.instance.applySettings();
+
+  // Initialize Stripe without blocking
+  Stripe.instance.applySettings().catchError((e) {
+    debugPrint('Stripe init error: $e');
+  });
+
+  // Initialize storage
   await GetStorage.init();
 
+  // Initialize services
   Get.put(ConnectivityService(), permanent: true);
   Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(NavigationController(), permanent: true);
   Get.put(DownloadController(), permanent: true);
-  await NotificationService.init();
+
+  // Notification service without blocking
+  NotificationService.init().catchError((e) {
+    debugPrint('Notification init error: $e');
+  });
+
   runApp(const MyApp());
 }
 
@@ -40,9 +49,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Music Player',
+      title: 'Navakarna',
       theme: AppThemes.light,
       darkTheme: AppThemes.dark,
+      themeMode: ThemeMode.system,
       defaultTransition: Transition.fade,
       home: const SplashScreen(),
     );
