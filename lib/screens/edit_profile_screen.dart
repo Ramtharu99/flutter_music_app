@@ -67,18 +67,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
 
       if (success) {
-        Get.snackbar(
-          'Success',
-          'Profile updated successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              'Profile update successfully',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         );
       } else {
-        Get.snackbar(
-          'Error',
-          _authController.errorMessage,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              'Failed to update profile',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -116,7 +122,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               const SizedBox(height: 24),
 
-              // Profile Image component
               ProfileImage(
                 imageUrl: _authController.currentUser?.profileImage,
                 onUpload: (file) async {
