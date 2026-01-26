@@ -33,8 +33,7 @@ void main() async {
   Get.put(AuthController(), permanent: true);
   Get.put(NavigationController(), permanent: true);
   Get.put(DownloadController(), permanent: true);
-
-  // Notification service without blocking
+  
   NotificationService.init().catchError((e) {
     debugPrint('Notification init error: $e');
   });

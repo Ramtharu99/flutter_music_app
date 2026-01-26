@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:music_app/models/models.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/services/offline_storage_service.dart';
 import 'package:music_app/utils/app_colors.dart';
+import 'package:music_app/widgets/bottom_player.dart';
 
-import '../controllers/download_controller.dart';
 import '../controllers/music_controller.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/songs_list.dart';
 
 class DownloadedSongsScreen extends StatefulWidget {
   const DownloadedSongsScreen({super.key});
@@ -15,23 +18,59 @@ class DownloadedSongsScreen extends StatefulWidget {
 }
 
 class _DownloadedSongsScreenState extends State<DownloadedSongsScreen> {
-  final DownloadController downloadController = DownloadController();
   final ConnectivityService _connectivityService =
       Get.find<ConnectivityService>();
-  final OfflineStorageService _offlineStorageService = OfflineStorageService();
+  final OfflineStorageService _offlineStorage = OfflineStorageService();
 
-  Future<void> _onRefresh() async {
-    if (_connectivityService.isOffline) return;
+  List<Song> offlineSongs = [];
+  bool _isLoading = true;
 
-    downloadController.downloadedSongs;
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
-    await Future.delayed(const Duration(milliseconds: 500));
+  /// Load downloaded songs from offline storage
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Small delay for smooth RefreshIndicator animation
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Get downloaded songs
+    final downloadedSongs = _offlineStorage.getDownloadedSongs();
+
+    // Remove duplicates by song ID
+    final uniqueSongs = <int, Song>{};
+    for (var song in downloadedSongs) {
+      uniqueSongs[song.id] = song;
+    }
+
+    setState(() {
+      offlineSongs = uniqueSongs.values.toList();
+      _isLoading = false;
+    });
+  }
+
+  /// Play tapped song
+  void _playSong(Song song) {
+    if (song.fileUrl != null && song.fileUrl!.isNotEmpty) {
+      MusicController.playFromSong(song);
+    } else {
+      Get.snackbar(
+        'Error',
+        'Song file not available.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    List<String> downloadedSongs = downloadController.getDownloadedSongs();
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -41,7 +80,7 @@ class _DownloadedSongsScreenState extends State<DownloadedSongsScreen> {
         ),
         backgroundColor: Colors.black,
         title: const Text(
-          'Downloaded Songs',
+          'Offline Songs',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -49,46 +88,38 @@ class _DownloadedSongsScreenState extends State<DownloadedSongsScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        color: AppColors.primaryColor,
-        backgroundColor: Colors.black,
-        onRefresh: _onRefresh,
-        child: downloadedSongs.isEmpty
-            ? ListView(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryColor),
+            )
+          : offlineSongs.isEmpty
+          ? const EmptyState(
+              title: 'No downloaded songs',
+              subtitle: 'Download songs to play offline',
+            )
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              color: AppColors.primaryColor,
+              backgroundColor: Colors.black,
+              child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 200),
-                  Center(
-                    child: Text(
-                      'No downloaded songs',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                ],
-              )
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: downloadedSongs.length,
-                itemBuilder: (context, index) {
-                  final songTitle = downloadedSongs[index];
-                  return ListTile(
-                    leading: const Icon(Icons.music_note, color: Colors.white),
-                    title: Text(
-                      songTitle,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    onTap: () {
-                      MusicController.playFromUrl(
-                        url: 'assets/music/song1.mp3',
-                        title: songTitle,
-                        artist: 'Dj Nova',
-                        imageUrl: 'assets/images/logo.png',
-                      );
-                    },
-                  );
-                },
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Column(
+                  children: offlineSongs.map((song) {
+                    return SongsList(
+                      songs: [song],
+                      offlineStorageService: _offlineStorage,
+                      connectivityService: _connectivityService,
+                      onSongTap: _playSong,
+                    );
+                  }).toList(),
+                ),
               ),
-      ),
+            ),
+      bottomSheet: const BottomPlayer(),
     );
   }
 }

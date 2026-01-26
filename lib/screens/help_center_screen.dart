@@ -24,24 +24,40 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     {
       'title': 'How to Download Songs',
       'description':
-          '1. Open a song.\n2. Tap the download icon.\n3. The song will be saved to your library for offline play.',
+          '1. Go to the Tuner screen.\n'
+          '2. Tap the three-dot menu on a song.\n'
+          '3. Select "Download".\n'
+          '4. The song will be saved to your Offline section for later playback.',
+    },
+    {
+      'title': 'How to Access Downloaded (Offline) Songs',
+      'description':
+          '1. Open the Tuner screen.\n'
+          '2. Swipe the chip bar to the left.\n'
+          '3. Tap on the "Offline" chip.\n'
+          '4. All your downloaded songs will appear here and can be played without internet.',
     },
     {
       'title': 'How to Create a Playlist',
       'description':
-          '1. Go to your Library.\n2. Tap "Create Playlist".\n3. Add songs from your favorites or search.',
+          '1. Go to your Library.\n'
+          '2. Tap "Create Playlist".\n'
+          '3. Add songs from your favorites or search.',
     },
     {
       'title': 'How to Use the Search Feature',
       'description':
-          '1. Tap the search icon.\n2. Type the song, album, or artist.\n3. Select from the results to play instantly.',
+          '1. Tap the search icon.\n'
+          '2. Type the song, album, or artist.\n'
+          '3. Select from the results to play instantly.',
     },
     {
       'title': 'Account Settings',
       'description':
-          '1. Tap on your profile.\n2. Go to Settings.\n3. Update email, password, or preferences.',
+          '1. Tap on your profile.\n'
+          '2. Go to Manage Account.\n'
+          '3. Update name, email, password, and also profile image',
     },
-    // Add more topics here
   ];
 
   @override
@@ -80,7 +96,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     );
   }
 
-  // Helper widget to build each card
   Widget _buildHelpCard(String title, String description) {
     return Card(
       color: Colors.grey[900],

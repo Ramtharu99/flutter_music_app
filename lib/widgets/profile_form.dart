@@ -6,7 +6,16 @@ import 'package:music_app/utils/app_colors.dart';
 import 'package:music_app/widgets/custom_text_field.dart';
 
 class ProfileForm extends StatefulWidget {
-  const ProfileForm({super.key});
+  final String label;
+  final String? value;
+  final IconData icon;
+
+  const ProfileForm({
+    super.key,
+    required this.label,
+    this.value,
+    required this.icon,
+  });
 
   @override
   State<ProfileForm> createState() => _ProfileFormState();
