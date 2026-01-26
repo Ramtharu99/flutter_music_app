@@ -50,14 +50,17 @@ class SongMenu {
 
     if (selected == 'download' && !song.isDownloaded) {
       final downloadedSong = song.copyWith(isDownloaded: true);
-      offlineStorage.saveDownloadedSong(downloadedSong);
-      downloadController.downloadSong(song.title);
+
+      await offlineStorage.saveDownloadedSong(downloadedSong);
+
+      await downloadController.downloadSongModel(downloadedSong);
 
       Get.snackbar(
         'Downloaded',
         '${song.title} saved for offline playback',
         backgroundColor: Colors.grey.shade800,
         colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
       );
     }
   }

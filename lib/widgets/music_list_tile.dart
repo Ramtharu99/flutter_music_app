@@ -94,7 +94,6 @@ class MusicListTile extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    // Check if it's a network URL or asset
     if (image.startsWith('http://') || image.startsWith('https://')) {
       return Image.network(
         image,

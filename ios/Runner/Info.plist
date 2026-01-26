@@ -30,6 +30,12 @@
 	<string>We need camera access to take profile picture</string>
 	<key>NCPhotoLibraryUsageDescription</key>
 	<string>We need photo library access to select profile picture</string>
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+	    <key>NSAllowsArbitraryLoads</key>
+	    <true/>
+	</dict>
 	
 	<!-- Background Modes for audio playback -->
 	<key>UIBackgroundModes</key>

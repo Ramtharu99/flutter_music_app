@@ -61,10 +61,8 @@ class _TunerScreenState extends State<TunerScreen> {
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
-    // All downloaded songs
     final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
-    // Get all songs from API or cache
     List<Song> allSongs;
     if (_connectivityService.isOnline) {
       final response = await _apiService.getSongs();
@@ -89,7 +87,6 @@ class _TunerScreenState extends State<TunerScreen> {
         })
         .toList();
 
-    // Featured songs: first 5 songs
     featuredSongs = allSongs.take(5).toList();
 
     songs = allSongs;
