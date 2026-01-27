@@ -14,6 +14,7 @@ import 'package:music_app/widgets/bottom_player.dart';
 import 'package:music_app/widgets/chip_widget.dart';
 import 'package:music_app/widgets/empty_state.dart';
 import 'package:music_app/widgets/music_card.dart';
+import 'package:music_app/widgets/refreshable_scroll_view.dart';
 import 'package:music_app/widgets/section_title.dart';
 import 'package:music_app/widgets/songs_list.dart';
 
@@ -172,58 +173,53 @@ class _TunerScreenState extends State<TunerScreen> {
                     },
                     children: [
                       /// ALL PAGE
-                      RefreshIndicator(
+                      RefreshableScrollView(
                         onRefresh: _loadData,
                         color: AppColors.primaryColor,
                         backgroundColor: Colors.black,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SectionTitle(
-                                title: 'Featured',
-                                onMoreTap: () => Get.to(() => PlaylistScreen()),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SectionTitle(
+                              title: 'Featured',
+                              onMoreTap: () => Get.to(() => PlaylistScreen()),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 200,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: featuredSongs.length,
+                                itemBuilder: (_, index) {
+                                  final song = featuredSongs[index];
+                                  return MusicCard(
+                                    image: song.coverImage,
+                                    title: song.title,
+                                    artist: song.artist,
+                                    onTap: () => _playSong(song),
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 200,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: featuredSongs.length,
-                                  itemBuilder: (_, index) {
-                                    final song = featuredSongs[index];
-                                    return MusicCard(
-                                      image: song.coverImage,
-                                      title: song.title,
-                                      artist: song.artist,
-                                      onTap: () => _playSong(song),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              SectionTitle(
-                                title: 'All Songs',
-                                onMoreTap: () =>
-                                    Get.to(() => SongsListScreen()),
-                              ),
-                              SongsList(
-                                songs: songs,
-                                offlineStorageService: _offlineStorage,
-                                connectivityService: _connectivityService,
-                                onSongTap: _playSong,
-                              ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: 24),
+                            SectionTitle(
+                              title: 'All Songs',
+                              onMoreTap: () => Get.to(() => SongsListScreen()),
+                            ),
+                            SongsList(
+                              songs: songs,
+                              offlineStorageService: _offlineStorage,
+                              connectivityService: _connectivityService,
+                              onSongTap: _playSong,
+                            ),
+                          ],
                         ),
                       ),
 
                       /// SONGS PAGE
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: RefreshIndicator(
+                        child: RefreshableScrollView(
                           onRefresh: _loadData,
                           color: AppColors.primaryColor,
                           backgroundColor: Colors.black,
@@ -253,7 +249,7 @@ class _TunerScreenState extends State<TunerScreen> {
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
-                              child: RefreshIndicator(
+                              child: RefreshableScrollView(
                                 onRefresh: _loadData,
                                 color: AppColors.primaryColor,
                                 backgroundColor: Colors.black,
