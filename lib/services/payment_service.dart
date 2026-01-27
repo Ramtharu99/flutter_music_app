@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 
 class PaymentService {
-  static const String _testSecretToken =
-      "sk_test_51Srg46Qkp33zQdtFrxFEnr1vByMX6jSoCHWv51SvgUAMaKTOiQYgnaKqstOdA75kfoFwnrt6c5EGkdg6AwtoRHtA00Ovbnq8mG";
+  static final _testSecretToken = dotenv.get('STRIPE_SECRET_KEY');
 
   static Future<String?> createTestPaymentIntent({
     required int amount,

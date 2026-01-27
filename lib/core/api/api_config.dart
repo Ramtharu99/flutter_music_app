@@ -1,7 +1,7 @@
-library;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  static const String baseUrl = 'https://music-api-qhag.onrender.com/api/v1';
+  static String get baseUrl => dotenv.get('API_BASE_URL');
 
   static const Duration connectionTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
@@ -11,9 +11,6 @@ class ApiConfig {
   static const String logout = '/logout';
   static const String forgotPassword = '/change-password';
 
-  // static const String refreshToken = '/refresh';
-
-  // User
   static const String profile = '/me';
   static const String updateProfile = '/update-profile';
   static const String uploadProfileImage = '/update-profile';

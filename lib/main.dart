@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
@@ -40,8 +41,9 @@ Future<void> main() async {
     },
   );
 
-  const String stripePublicKey =
-      "pk_test_51Srg46Qkp33zQdtFE7kisbGhP0dvFrrryDzy2xxOaOynjDJuIHObTTQu4nbYJr3Y9fpYiYpGWFTC83dCkeZ6nrx9006L71x6iA";
+  await dotenv.load(fileName: '.env');
+
+  final stripePublicKey = dotenv.get('STRIPE_PUBLIC_KEY');
 
   Stripe.publishableKey = stripePublicKey;
   Stripe.instance.applySettings().catchError((e) {
