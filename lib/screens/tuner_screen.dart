@@ -1,11 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/music_controller.dart';
+import 'package:music_app/controllers/video_controller.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/screens/account_screen.dart';
 import 'package:music_app/screens/playlist_screen.dart';
 import 'package:music_app/screens/search_screen.dart';
 import 'package:music_app/screens/songs_list_screen.dart';
+import 'package:music_app/screens/video_player_screen.dart';
 import 'package:music_app/services/api_service.dart';
 import 'package:music_app/services/connectivity_service.dart';
 import 'package:music_app/services/offline_storage_service.dart';
@@ -33,6 +36,7 @@ class _TunerScreenState extends State<TunerScreen> {
     {'label': 'All', 'icon': Icons.library_music},
     {'label': 'Songs', 'icon': Icons.music_note},
     {'label': 'Frequencies', 'icon': Icons.waves},
+    {'label': 'Videos', 'icon': Icons.video_camera_back},
     {'label': 'Offline', 'icon': Icons.file_download},
   ];
 
@@ -40,6 +44,8 @@ class _TunerScreenState extends State<TunerScreen> {
   final OfflineStorageService _offlineStorage = OfflineStorageService();
   final ConnectivityService _connectivityService =
       Get.find<ConnectivityService>();
+
+  final VideoController videoController = Get.find<VideoController>();
 
   List<Song> songs = [];
   List<Song> featuredSongs = [];
@@ -102,6 +108,13 @@ class _TunerScreenState extends State<TunerScreen> {
     } else {
       debugPrint('this song has not file url');
     }
+  }
+
+  ///video player
+  Future<void> _loadVideos() async {
+    setState(() => isLoading = true);
+
+    setState(() => isLoading = false);
   }
 
   @override
@@ -236,6 +249,59 @@ class _TunerScreenState extends State<TunerScreen> {
                         child: Text(
                           'Healing frequencies coming soon...',
                           style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+
+                      /// VIDEOS PAGE
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: RefreshableScrollView(
+                          onRefresh: _loadVideos,
+                          color: AppColors.primaryColor,
+                          backgroundColor: Colors.black,
+                          child: Column(
+                            children: [
+                              if (videoController.videos.isEmpty)
+                                const EmptyState(
+                                  title: 'No videos available',
+                                  subtitle: 'Pull down to refresh',
+                                )
+                              else
+                                ListView.builder(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  itemCount: videoController.videos.length,
+                                  itemBuilder: (context, index) {
+                                    final video = videoController.videos[index];
+                                    return ListTile(
+                                      leading: CachedNetworkImage(
+                                        imageUrl: video.thumbnail,
+                                        width: 80,
+                                        fit: BoxFit.cover,
+                                      ),
+                                      title: Text(
+                                        video.title,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      trailing: const Icon(
+                                        Icons.play_circle_fill,
+                                        color: Colors.red,
+                                      ),
+                                      onTap: () async {
+                                        await videoController.initializePlayer(
+                                          index,
+                                        );
+                                        Get.to(
+                                          () => VideoPlayerScreen(index: index),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
                         ),
                       ),
 

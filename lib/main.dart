@@ -8,6 +8,7 @@ import 'package:music_app/controllers/auth_controller.dart';
 import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/navigation_controller.dart';
 import 'package:music_app/controllers/theme_controller.dart';
+import 'package:music_app/controllers/video_controller.dart';
 import 'package:music_app/screens/downloaded_songs_screen.dart';
 import 'package:music_app/screens/splash_screen.dart';
 import 'package:music_app/services/connectivity_service.dart';
@@ -57,6 +58,7 @@ Future<void> main() async {
   Get.put(AuthController(), permanent: true);
   Get.put(NavigationController(), permanent: true);
   Get.put(DownloadController(), permanent: true);
+  Get.put(VideoController(), permanent: true);
 
   NotificationService.init().catchError((e) {
     debugPrint('Notification init error: $e');

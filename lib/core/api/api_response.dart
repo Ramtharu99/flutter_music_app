@@ -39,6 +39,6 @@ class ApiResponse<T> {
 
   @override
   String toString() {
-    return 'ApiResponse(success: $success, message: $message, statusCode: $statusCode)';
+    return 'message: $message';
   }
 }
