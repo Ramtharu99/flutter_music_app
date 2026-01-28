@@ -18,11 +18,10 @@ class ApiConfig {
   static const String deleteAccount = '/delete-account';
 
   // Music
-  static const String music = '/music';
+  static const String getAllMusic = '/music';
   static const String musicById = '/music';
   static const String musicPlay = '/music';
   static const String searchSongs = '/music';
-  static const String songById = '/music';
 
   // Purchases
   static const String purchase = '/purchase';

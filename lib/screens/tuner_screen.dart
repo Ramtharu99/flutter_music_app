@@ -68,37 +68,51 @@ class _TunerScreenState extends State<TunerScreen> {
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
-    final downloadedSongs = _offlineStorage.getDownloadedSongs();
+    try {
+      // Get downloaded songs from offline storage
+      final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
-    List<Song> allSongs;
-    if (_connectivityService.isOnline) {
-      final response = await _apiService.getSongs();
-      if (response.success && response.data != null) {
-        allSongs = response.data!;
-        _offlineStorage.cacheSongs(allSongs);
+      List<Song> allSongs = [];
+
+      if (_connectivityService.isOnline) {
+        // Fetch songs from the API (use the correct method)
+        final response = await _apiService.getMusic();
+
+        if (response.success && response.data != null) {
+          allSongs = response.data!;
+          // Cache songs for offline use
+          _offlineStorage.cacheSongs(allSongs);
+        } else {
+          // If API fails, fallback to cached songs
+          allSongs = _offlineStorage.getCachedSongs();
+        }
       } else {
+        // Offline mode: use cached songs
         allSongs = _offlineStorage.getCachedSongs();
       }
-    } else {
-      allSongs = _offlineStorage.getCachedSongs();
+
+      // Filter downloaded songs that are not in allSongs
+      offlineSongs = downloadedSongs
+          .where((d) => allSongs.every((s) => s.id != d.id))
+          .map(
+            (song) => song.copyWith(
+              coverImage: song.coverImage.isNotEmpty ? song.coverImage : '',
+            ),
+          )
+          .toList();
+
+      featuredSongs = allSongs.take(5).toList();
+
+      // All songs list
+      songs = allSongs;
+    } catch (e) {
+      debugPrint('Error loading songs: $e');
+      songs = _offlineStorage.getCachedSongs();
+      featuredSongs = songs.take(5).toList();
+      offlineSongs = offlineSongs;
+    } finally {
+      setState(() => isLoading = false);
     }
-
-    offlineSongs = downloadedSongs
-        .where((d) => allSongs.every((s) => s.id != d.id))
-        .map((song) {
-          return song.copyWith(
-            coverImage: song.coverImage.isNotEmpty
-                ? song.coverImage
-                : song.coverImage,
-          );
-        })
-        .toList();
-
-    featuredSongs = allSongs.take(5).toList();
-
-    songs = allSongs;
-
-    setState(() => isLoading = false);
   }
 
   /// Play a song using MusicController

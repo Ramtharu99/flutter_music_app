@@ -172,7 +172,7 @@ class ApiService {
   }) async {
     try {
       final response = await _client.get<dynamic>(
-        ApiConfig.music,
+        ApiConfig.getAllMusic,
         queryParams: {'page': page, 'limit': limit},
       );
 
@@ -237,31 +237,6 @@ class ApiService {
       return ApiResponse.error(e.toString());
     }
   }
-
-  /// Get song by ID
-  Future<ApiResponse<Song>> getSongById(String id) async {
-    try {
-      final response = await _client.get<dynamic>('${ApiConfig.songById}/$id');
-
-      if (response.success && response.data != null) {
-        final songData = response.data is Map
-            ? response.data
-            : response.data['data'];
-
-        final song = Song.fromJson(songData);
-        return ApiResponse.success(song);
-      }
-
-      return ApiResponse.error(response.message ?? 'Song not found');
-    } catch (e) {
-      debugPrint('Get song by ID error: $e');
-      return ApiResponse.error(e.toString());
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // ║                       PLAYLISTS                                 ║
-  // ═══════════════════════════════════════════════════════════════════
 
   /// Get user playlists
   Future<ApiResponse<List<Playlist>>> getPlaylists() async {
@@ -606,14 +581,14 @@ class ApiService {
       }
 
       final response = await _client.get<dynamic>(
-        ApiConfig.music,
+        ApiConfig.getAllMusic,
         queryParams: queryParams,
       );
 
       if (response.success && response.data != null) {
         final List<dynamic> songsData = response.data is List
             ? response.data
-            : response.data['data'] ?? [];
+            : response.data['data']['data'] ?? [];
 
         final songs = songsData.map((json) => Song.fromJson(json)).toList();
         return ApiResponse.success(songs);

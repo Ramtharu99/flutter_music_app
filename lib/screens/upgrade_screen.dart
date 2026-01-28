@@ -41,7 +41,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       );
 
       if (clientSecret == null) {
-        _showSnackBar('Failed to create payment intent', Colors.red);
+        debugPrint('Failed payment');
         return;
       }
 
@@ -51,22 +51,12 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         merchantName: 'Navakarna Music',
       );
 
-      _showSnackBar('Payment successful ($selectedPriceText)', Colors.green);
+      debugPrint('payment success');
     } catch (e) {
-      _showSnackBar('Payment failed: $e', Colors.red);
+      debugPrint('Something w');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
-  }
-
-  void _showSnackBar(String message, Color color) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: color,
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-      ),
-    );
   }
 
   @override
