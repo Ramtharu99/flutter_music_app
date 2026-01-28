@@ -332,7 +332,7 @@ class _TunerScreenState extends State<TunerScreen> {
                 ),
               ],
             ),
-      bottomSheet: const BottomPlayer(),
+      bottomNavigationBar: const BottomPlayer(),
     );
   }
 }
