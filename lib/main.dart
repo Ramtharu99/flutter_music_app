@@ -20,39 +20,45 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  const AndroidInitializationSettings initializationSettingsAndroid =
+
+  // Local Notifications
+  const AndroidInitializationSettings androidSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings(
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        requestAlertPermission: true,
-      );
-
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsIOS,
+  const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+    requestSoundPermission: true,
+    requestBadgePermission: true,
+    requestAlertPermission: true,
   );
-
+  const InitializationSettings initSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: iosSettings,
+  );
   await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
+    initSettings,
     onDidReceiveNotificationResponse: (details) {
       Get.to(() => DownloadedSongsScreen());
     },
   );
 
+  // Load .env
   await dotenv.load(fileName: '.env');
+  final stripePublicKey = dotenv.get('STRIPE_PUBLIC_KEY', fallback: '');
+  if (stripePublicKey.isEmpty) {
+    debugPrint('⚠️ Stripe key missing!');
+  }
 
-  final stripePublicKey = dotenv.get('STRIPE_PUBLIC_KEY');
-
+  // Stripe
   Stripe.publishableKey = stripePublicKey;
-  Stripe.instance.applySettings().catchError((e) {
+  try {
+    await Stripe.instance.applySettings();
+  } catch (e) {
     debugPrint('Stripe init error: $e');
-  });
+  }
 
+  // Storage
   await GetStorage.init();
 
+  // Controllers
   Get.put(ConnectivityService(), permanent: true);
   Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
@@ -60,9 +66,12 @@ Future<void> main() async {
   Get.put(DownloadController(), permanent: true);
   Get.put(VideoController(), permanent: true);
 
-  NotificationService.init().catchError((e) {
+  // Notification Service
+  try {
+    await NotificationService.init();
+  } catch (e) {
     debugPrint('Notification init error: $e');
-  });
+  }
 
   runApp(const MyApp());
 }
@@ -79,7 +88,6 @@ class MyApp extends StatelessWidget {
       darkTheme: AppThemes.dark,
       themeMode: ThemeMode.system,
       defaultTransition: Transition.fade,
-      /*home: VideoPlayerScreen(),*/
       home: const SplashScreen(),
       getPages: [
         GetPage(name: '/downloaded_songs', page: () => const SplashScreen()),

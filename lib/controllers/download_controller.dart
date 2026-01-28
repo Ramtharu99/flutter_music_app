@@ -1,6 +1,6 @@
 // File: controllers/download_controller.dart
 import 'dart:io';
-
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:music_app/models/song_model.dart';
@@ -13,15 +13,18 @@ class DownloadController extends GetxController {
 
   // Observable state
   final RxList<Song> _downloadedSongs = <Song>[].obs;
-  final RxBool _isDownloading = false.obs;
-  final RxString _currentDownloadId = ''.obs;
+  final RxMap<String, double> _downloadProgress = <String, double>{}.obs;
+  final RxSet<String> _downloadingIds = <String>{}.obs;
+  final RxString _currentDownloadingTitle = ''.obs;
 
   // Getters
   List<Song> get downloadedSongs => _downloadedSongs;
+  Map<String, double> get downloadProgress => _downloadProgress;
+  Set<String> get downloadingIds => _downloadingIds;
+  String get currentDownloadingTitle => _currentDownloadingTitle.value;
 
-  bool get isDownloading => _isDownloading.value;
-
-  String get currentDownloadId => _currentDownloadId.value;
+  bool isDownloading(String songId) => _downloadingIds.contains(songId);
+  double getProgress(String songId) => _downloadProgress[songId] ?? 0.0;
 
   @override
   void onInit() {
@@ -32,6 +35,7 @@ class DownloadController extends GetxController {
   /// Load downloaded songs from storage
   void _loadDownloadedSongs() {
     _downloadedSongs.value = _offlineStorage.getDownloadedSongs();
+    update();
   }
 
   /// Get downloaded songs (legacy method)
@@ -41,18 +45,35 @@ class DownloadController extends GetxController {
 
   /// Download a song with offline storage + notifications
   Future<void> downloadSong(Song song) async {
-    _isDownloading.value = true;
-    _currentDownloadId.value = song.id.toString();
+    final songId = song.id.toString();
+
+    if (_downloadingIds.contains(songId)) {
+      Get.snackbar(
+        'Already Downloading',
+        '${song.title} is already being downloaded',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    _downloadingIds.add(songId);
+    _currentDownloadingTitle.value = song.title;
+    _downloadProgress[songId] = 0.0;
+    update();
 
     try {
-      // Simulate download progress
-      for (int progress = 0; progress <= 100; progress += 10) {
-        await Future.delayed(const Duration(milliseconds: 300));
+      // Simulate realistic download with progress updates
+      for (int progress = 0; progress <= 100; progress += 5) {
+        await Future.delayed(const Duration(milliseconds: 200));
 
-        // Android: show progress bar, iOS: show text
+        _downloadProgress[songId] = progress / 100.0;
+        update();
+
+        // Show notification with progress
         if (Platform.isAndroid) {
           await flutterLocalNotificationsPlugin.show(
-            0,
+            song.id.hashCode,
             'Downloading ${song.title}',
             '$progress% completed',
             NotificationDetails(
@@ -66,15 +87,16 @@ class DownloadController extends GetxController {
                 maxProgress: 100,
                 progress: progress,
                 onlyAlertOnce: true,
+                ongoing: true,
               ),
             ),
           );
         } else if (Platform.isIOS) {
           await flutterLocalNotificationsPlugin.show(
-            0,
+            song.id.hashCode,
             'Downloading ${song.title}',
             '$progress% completed',
-            NotificationDetails(iOS: DarwinNotificationDetails()),
+            NotificationDetails(iOS: const DarwinNotificationDetails()),
           );
         }
       }
@@ -82,11 +104,14 @@ class DownloadController extends GetxController {
       // Save downloaded song
       final downloadedSong = song.copyWith(isDownloaded: true);
       await _offlineStorage.saveDownloadedSong(downloadedSong);
-      _downloadedSongs.add(downloadedSong);
+
+      if (!_downloadedSongs.any((s) => s.id == song.id)) {
+        _downloadedSongs.add(downloadedSong);
+      }
 
       // Completed notification
       await flutterLocalNotificationsPlugin.show(
-        0,
+        song.id.hashCode,
         'Download Complete',
         '${song.title} is ready offline',
         NotificationDetails(
@@ -97,13 +122,30 @@ class DownloadController extends GetxController {
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
       );
+
+      Get.snackbar(
+        'Download Complete',
+        '${song.title} saved successfully',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      debugPrint('Download error: $e');
+      Get.snackbar(
+        'Download Failed',
+        'Could not download ${song.title}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
-      _isDownloading.value = false;
-      _currentDownloadId.value = '';
-      update(); // Ensure UI updates
+      _downloadingIds.remove(songId);
+      _currentDownloadingTitle.value = '';
+      _downloadProgress.remove(songId);
+      update();
     }
   }
 
@@ -131,7 +173,32 @@ class DownloadController extends GetxController {
     _downloadedSongs.removeWhere(
       (s) => s.id == titleOrId || s.title == titleOrId,
     );
+    _downloadProgress.remove(titleOrId);
     update();
+
+    Get.snackbar(
+      'Removed',
+      'Song removed from downloads',
+      backgroundColor: Colors.blue,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 1),
+    );
+  }
+
+  /// Cancel a download
+  Future<void> cancelDownload(String songId) async {
+    _downloadingIds.remove(songId);
+    _downloadProgress.remove(songId);
+    _currentDownloadingTitle.value = '';
+    update();
+
+    Get.snackbar(
+      'Download Cancelled',
+      'Download has been cancelled',
+      backgroundColor: Colors.orange,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 1),
+    );
   }
 
   /// Clear all downloads
@@ -140,7 +207,16 @@ class DownloadController extends GetxController {
       await _offlineStorage.removeDownloadedSong(song.id.toString());
     }
     _downloadedSongs.clear();
+    _downloadProgress.clear();
     update();
+
+    Get.snackbar(
+      'Cleared',
+      'All downloads have been removed',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 1),
+    );
   }
 
   /// Check if a song is downloaded

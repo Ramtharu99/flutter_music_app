@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:music_app/models/video_model.dart';
@@ -9,6 +10,7 @@ class VideoController extends GetxController {
   final currentIndex = 0.obs;
   final isInitialized = false.obs;
   final showControls = true.obs;
+  final isPlaying = false.obs;
 
   @override
   void onInit() {
@@ -42,43 +44,63 @@ class VideoController extends GetxController {
   }
 
   Future<void> initializePlayer(int index) async {
-    currentIndex.value = index;
+    try {
+      currentIndex.value = index;
 
-    player = VideoPlayerController.networkUrl(Uri.parse(videos[index].url));
-    await player.initialize();
-    isInitialized.value = true;
-    player.play();
-
-    ///full screen
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-
-    player.addListener(() {
-      if (player.value.position >= player.value.duration &&
-          index < videos.length - 1) {
-        nextVideo();
+      // Dispose old player if exists
+      if (isInitialized.value) {
+        await player.dispose();
       }
-    });
+
+      player = VideoPlayerController.networkUrl(Uri.parse(videos[index].url));
+      await player.initialize();
+
+      // Setup listeners
+      player.addListener(() {
+        isPlaying.value = player.value.isPlaying;
+
+        // Auto-play next video when current finishes
+        if (player.value.position >= player.value.duration &&
+            index < videos.length - 1) {
+          nextVideo();
+        }
+      });
+
+      isInitialized.value = true;
+      await player.play();
+      isPlaying.value = true;
+
+      // Set landscape orientation for video playback
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('Error initializing video player: $e');
+      isInitialized.value = false;
+    }
   }
 
   void togglePlay() {
-    player.value.isPlaying ? player.pause() : player.play();
+    if (player.value.isPlaying) {
+      player.pause();
+      isPlaying.value = false;
+    } else {
+      player.play();
+      isPlaying.value = true;
+    }
     update();
   }
 
   void nextVideo() {
     if (currentIndex.value < videos.length - 1) {
-      player.dispose();
       initializePlayer(currentIndex.value + 1);
     }
   }
 
   void previousVideo() {
     if (currentIndex.value > 0) {
-      player.dispose();
       initializePlayer(currentIndex.value - 1);
     }
   }
@@ -87,11 +109,33 @@ class VideoController extends GetxController {
     showControls.value = !showControls.value;
   }
 
+  /// Seek to position
+  void seekToPosition(Duration position) {
+    player.seekTo(position);
+  }
+
+  /// Get current position
+  Duration getCurrentPosition() {
+    return player.value.position;
+  }
+
+  /// Get total duration
+  Duration getTotalDuration() {
+    return player.value.duration;
+  }
+
   @override
   void onClose() {
-    player.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+      player.dispose();
+    } catch (e) {
+      debugPrint('Error disposing video player: $e');
+    }
     super.onClose();
   }
 }

@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/controllers/music_controller.dart';
+import 'package:music_app/models/song_model.dart';
 import 'package:music_app/utils/app_colors.dart';
 
 class NowPlayingScreen extends StatelessWidget {
@@ -252,15 +253,53 @@ class NowPlayingScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    "Downloaded Songs",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Downloaded Songs",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Get.dialog(
+                            AlertDialog(
+                              title: const Text('Clear All Downloads?'),
+                              content: const Text(
+                                'This will delete all downloaded songs. Continue?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Get.back(),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    controller.clearAllDownloads();
+                                    Get.back();
+                                  },
+                                  child: const Text(
+                                    'Delete All',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          Icons.delete_sweep,
+                          color: Colors.red.shade400,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -268,42 +307,112 @@ class NowPlayingScreen extends StatelessWidget {
 
                 GetBuilder<DownloadController>(
                   builder: (controller) {
-                    final songs = controller.getDownloadedSongs();
+                    final songs = controller.downloadedSongs;
 
                     return Expanded(
                       child: songs.isEmpty
-                          ? const Center(
-                              child: Text(
-                                "No downloaded songs",
-                                style: TextStyle(color: Colors.grey),
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.download_for_offline_outlined,
+                                    size: 64,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    "No downloaded songs yet",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           : ListView.separated(
+                              padding: EdgeInsets.zero,
                               itemCount: songs.length,
-                              separatorBuilder: (context, index) =>
-                                  Divider(color: Colors.grey.shade800),
+                              separatorBuilder: (context, index) => Divider(
+                                color: Colors.grey.shade800,
+                                height: 0,
+                              ),
                               itemBuilder: (context, index) {
+                                final song = songs[index];
                                 return ListTile(
-                                  leading: const Icon(
-                                    Icons.music_note,
-                                    color: Colors.white,
+                                  onTap: () {
+                                    // Navigate to downloaded song
+                                    MusicController.playFromSong(song);
+                                    Get.back();
+                                  },
+                                  leading: Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(4),
+                                      image: DecorationImage(
+                                        image: NetworkImage(song.coverImage),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    child: song.coverImage.isEmpty
+                                        ? const Icon(
+                                            Icons.music_note,
+                                            color: Colors.white,
+                                          )
+                                        : null,
                                   ),
                                   title: Text(
-                                    songs[index],
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  trailing: IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
+                                    song.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                    onPressed: () {
-                                      showDeleteDialog(
-                                        context,
-                                        songs[index],
-                                        controller,
-                                      );
-                                    },
+                                  ),
+                                  subtitle: Text(
+                                    song.artist,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  trailing: PopupMenuButton(
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        child: const Row(
+                                          children: [
+                                            Icon(Icons.play_arrow),
+                                            SizedBox(width: 8),
+                                            Text('Play'),
+                                          ],
+                                        ),
+                                        onTap: () {
+                                          MusicController.playFromSong(song);
+                                          Get.back();
+                                        },
+                                      ),
+                                      PopupMenuItem(
+                                        child: const Row(
+                                          children: [
+                                            Icon(Icons.delete),
+                                            SizedBox(width: 8),
+                                            Text('Delete'),
+                                          ],
+                                        ),
+                                        onTap: () {
+                                          showDeleteDialog(
+                                            context,
+                                            song,
+                                            controller,
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -321,7 +430,7 @@ class NowPlayingScreen extends StatelessWidget {
 
   void showDeleteDialog(
     BuildContext context,
-    String songTitle,
+    Song song,
     DownloadController controller,
   ) {
     Get.dialog(
@@ -330,33 +439,20 @@ class NowPlayingScreen extends StatelessWidget {
           children: const [
             Icon(Icons.delete, color: Colors.red),
             SizedBox(width: 8),
-            Text('Delete', style: TextStyle(fontSize: 20, color: Colors.black)),
+            Text('Delete', style: TextStyle(fontSize: 20)),
           ],
         ),
-        content: const Text('Are you sure you want to delete this song?'),
+        content: Text('Remove ${song.title} from downloads?'),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontSize: 16, color: Colors.black),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              controller.removeSong(songTitle);
+              controller.removeSong(song.id.toString());
               Get.back();
             },
             child: const Text(
               'Delete',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
         ],

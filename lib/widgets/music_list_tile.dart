@@ -1,9 +1,12 @@
 /// Music List Tile Widget
 /// Displays a song in a list format.
-/// Handles both network and asset images.
+/// Handles both network and asset images + download button.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:music_app/controllers/download_controller.dart';
+import 'package:music_app/models/song_model.dart';
 
 class MusicListTile extends StatelessWidget {
   final String image;
@@ -12,6 +15,7 @@ class MusicListTile extends StatelessWidget {
   final VoidCallback? onTap;
   final void Function(Offset position)? onMoreTap;
   final bool isDownloaded;
+  final Song? song;
 
   const MusicListTile({
     super.key,
@@ -21,6 +25,7 @@ class MusicListTile extends StatelessWidget {
     this.onTap,
     this.onMoreTap,
     this.isDownloaded = false,
+    this.song,
   });
 
   @override
@@ -78,6 +83,12 @@ class MusicListTile extends StatelessWidget {
               ),
             ),
 
+            // Download button with progress
+            if (song != null)
+              _buildDownloadButton(context)
+            else
+              const SizedBox(),
+
             GestureDetector(
               onTapDown: (details) {
                 onMoreTap?.call(details.globalPosition);
@@ -90,6 +101,74 @@ class MusicListTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDownloadButton(BuildContext context) {
+    final downloadController = Get.find<DownloadController>();
+    final songId = song!.id.toString();
+
+    return GetBuilder<DownloadController>(
+      builder: (_) {
+        final isDownloading = downloadController.isDownloading(songId);
+        final progress = downloadController.getProgress(songId);
+        final isDownloaded = downloadController.isSongDownloaded(songId);
+
+        if (isDownloaded) {
+          return Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              Icons.check_circle,
+              color: Colors.green.shade400,
+              size: 20,
+            ),
+          );
+        }
+
+        if (isDownloading) {
+          return Padding(
+            padding: const EdgeInsets.all(8),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.blue.shade400,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${(progress * 100).toInt()}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 7,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return GestureDetector(
+          onTap: () {
+            downloadController.downloadSong(song!);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(Icons.download, color: Colors.grey.shade400, size: 20),
+          ),
+        );
+      },
     );
   }
 

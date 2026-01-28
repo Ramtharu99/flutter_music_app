@@ -40,6 +40,7 @@ class SongsList extends StatelessWidget {
               : 'assets/images/logo.png',
           title: song.title,
           subtitle: song.artist,
+          song: song, // Pass the song object
           onTap: () {
             if (connectivityService.isOffline && !song.isDownloaded) {
               Get.snackbar(
