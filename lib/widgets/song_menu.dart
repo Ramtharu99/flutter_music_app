@@ -1,67 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:music_app/controllers/download_controller.dart';
 import 'package:music_app/models/song_model.dart';
 import 'package:music_app/services/offline_storage_service.dart';
+
+enum SongMenuType { all, offline }
 
 class SongMenu {
   static void show(
     BuildContext context,
     Offset position,
     Song song,
-    OfflineStorageService offlineStorage,
-  ) async {
-    final DownloadController downloadController =
-        Get.find<DownloadController>();
+    OfflineStorageService offlineStorage, {
+    required SongMenuType type,
+    Function(Song)? onDelete,
+    Function(Song)? onDownload,
+  }) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
 
-    final selected = await showMenu(
-      context: context,
-      color: Colors.grey.shade900,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      position: RelativeRect.fromLTRB(position.dx, position.dy, 0, 0),
-      items: [
-        PopupMenuItem(
-          value: 'download',
-          child: Row(
-            children: [
-              Icon(
-                song.isDownloaded ? Icons.check : Icons.download,
-                color: song.isDownloaded ? Colors.green : Colors.white,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                song.isDownloaded ? 'Downloaded' : 'Download',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ],
+    final items = <PopupMenuEntry>[];
+
+    if (type == SongMenuType.all) {
+      // Only show Download if song is not downloaded
+      if (!offlineStorage.isSongDownloaded(song.id.toString())) {
+        items.add(
+          PopupMenuItem(
+            child: const Text('Download'),
+            onTap: () {
+              if (onDownload != null) onDownload(song);
+            },
           ),
+        );
+      }
+    }
+
+    if (type == SongMenuType.offline) {
+      items.add(
+        PopupMenuItem(
+          child: const Text('Delete'),
+          onTap: () {
+            if (onDelete != null) onDelete(song);
+          },
         ),
-        const PopupMenuItem(
-          value: 'save',
-          child: Text('Save', style: TextStyle(color: Colors.white)),
-        ),
-        const PopupMenuItem(
-          value: 'playlist',
-          child: Text('Add to Playlist', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    );
-
-    if (selected == 'download' && !song.isDownloaded) {
-      final downloadedSong = song.copyWith(isDownloaded: true);
-
-      await offlineStorage.saveDownloadedSong(downloadedSong);
-
-      await downloadController.downloadSongModel(downloadedSong);
-
-      Get.snackbar(
-        'Downloaded',
-        '${song.title} saved for offline playback',
-        backgroundColor: Colors.grey.shade800,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
       );
     }
+
+    if (items.isEmpty) return;
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(position, position),
+        Offset.zero & overlay.size,
+      ),
+      items: items,
+    );
   }
 }

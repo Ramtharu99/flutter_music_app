@@ -1,8 +1,3 @@
-/// Music Card Widget
-/// Displays a music card with image, title, and artist.
-/// Handles both network and asset images.
-library;
-
 import 'package:flutter/material.dart';
 
 class MusicCard extends StatelessWidget {

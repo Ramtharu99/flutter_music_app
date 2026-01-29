@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:get_storage/get_storage.dart';
@@ -115,10 +116,28 @@ class OfflineStorageService {
   Future<void> removeDownloadedSong(String songId) async {
     try {
       final songs = getDownloadedSongs();
-      songs.removeWhere((s) => s.id == songId);
+
+      final song = songs.firstWhere(
+        (s) => s.id.toString() == songId,
+        orElse: () => null as Song,
+      );
+
+      // 🔥 DELETE AUDIO FILE
+      if (song != null &&
+          song.localPath != null &&
+          song.localPath!.isNotEmpty) {
+        final file = File(song.localPath!);
+        if (await file.exists()) {
+          await file.delete();
+          debugPrint('🗑 File deleted: ${song.localPath}');
+        }
+      }
+
+      songs.removeWhere((s) => s.id.toString() == songId);
 
       final songsJson = songs.map((s) => s.toJson()).toList();
       await _storage.write(_downloadedSongsKey, jsonEncode(songsJson));
+
       debugPrint('✅ Song removed from downloads');
     } catch (e) {
       debugPrint('❌ Error removing downloaded song: $e');

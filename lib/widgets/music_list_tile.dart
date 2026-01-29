@@ -1,8 +1,3 @@
-/// Music List Tile Widget
-/// Displays a song in a list format.
-/// Handles both network and asset images + download button.
-library;
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/controllers/download_controller.dart';
@@ -16,6 +11,8 @@ class MusicListTile extends StatelessWidget {
   final void Function(Offset position)? onMoreTap;
   final bool isDownloaded;
   final Song? song;
+  final bool selected;
+  final VoidCallback? onLongPress;
 
   const MusicListTile({
     super.key,
@@ -26,13 +23,17 @@ class MusicListTile extends StatelessWidget {
     this.onMoreTap,
     this.isDownloaded = false,
     this.song,
+    this.selected = false,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      onLongPress: onLongPress,
+      child: Container(
+        color: selected ? Colors.blue.withOpacity(0.3) : Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
@@ -40,9 +41,7 @@ class MusicListTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               child: _buildImage(),
             ),
-
             const SizedBox(width: 12),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,15 +60,6 @@ class MusicListTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isDownloaded)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: Icon(
-                            Icons.download_done,
-                            size: 14,
-                            color: Colors.green.shade400,
-                          ),
-                        ),
                     ],
                   ),
                   const SizedBox(height: 2),
@@ -82,13 +72,10 @@ class MusicListTile extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Download button with progress
             if (song != null)
               _buildDownloadButton(context)
             else
               const SizedBox(),
-
             GestureDetector(
               onTapDown: (details) {
                 onMoreTap?.call(details.globalPosition);
@@ -112,18 +99,6 @@ class MusicListTile extends StatelessWidget {
       builder: (_) {
         final isDownloading = downloadController.isDownloading(songId);
         final progress = downloadController.getProgress(songId);
-        final isDownloaded = downloadController.isSongDownloaded(songId);
-
-        if (isDownloaded) {
-          return Padding(
-            padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.check_circle,
-              color: Colors.green.shade400,
-              size: 20,
-            ),
-          );
-        }
 
         if (isDownloading) {
           return Padding(
@@ -163,10 +138,7 @@ class MusicListTile extends StatelessWidget {
           onTap: () {
             downloadController.downloadSong(song!);
           },
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Icon(Icons.download, color: Colors.grey.shade400, size: 20),
-          ),
+          child: Padding(padding: const EdgeInsets.all(8), child: Text('')),
         );
       },
     );

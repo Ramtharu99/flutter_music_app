@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music_app/models/song_model.dart';
@@ -138,21 +140,35 @@ class DownloadController extends GetxController {
     await downloadSong(basicSong);
   }
 
-  Future<void> removeSong(String titleOrId) async {
-    await _offlineStorage.removeDownloadedSong(titleOrId);
-    _downloadedSongs.removeWhere(
-      (s) => s.id == titleOrId || s.title == titleOrId,
-    );
-    _downloadProgress.remove(titleOrId);
-    update();
+  Future<void> removeSong(Song song) async {
+    try {
+      if (song.localPath != null && song.localPath!.isNotEmpty) {
+        final file = File(song.localPath!);
+        if (await file.exists()) await file.delete();
+      }
 
-    Get.snackbar(
-      'Removed',
-      'Song removed from downloads',
-      backgroundColor: Colors.blue,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 1),
-    );
+      // Remove from offline storage
+      await _offlineStorage.removeDownloadedSong(song.id.toString());
+
+      // Update local list
+      _downloadedSongs.removeWhere((s) => s.id == song.id);
+      update();
+
+      Get.snackbar(
+        'Deleted',
+        '${song.title} removed from offline',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      debugPrint('Error deleting song: $e');
+      Get.snackbar(
+        'Error',
+        'Could not delete ${song.title}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   Future<void> cancelDownload(String songId) async {

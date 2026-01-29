@@ -53,14 +53,24 @@ class PaymentService {
       await Stripe.instance.presentPaymentSheet();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment successful (test mode)')),
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              'Payment successful (test mode)',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         );
       }
     } on StripeException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Payment failed: ${e.error.localizedMessage}'),
+            backgroundColor: Colors.red,
+            content: Text(
+              'Payment failed (test mode)',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         );
       }

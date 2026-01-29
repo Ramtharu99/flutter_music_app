@@ -53,7 +53,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
 
       debugPrint('payment success');
     } catch (e) {
-      debugPrint('Something w');
+      debugPrint('Something went wrong');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

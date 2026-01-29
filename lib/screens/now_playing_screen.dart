@@ -447,7 +447,7 @@ class NowPlayingScreen extends StatelessWidget {
           TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              controller.removeSong(song.id.toString());
+              controller.removeSong(song.id.toString() as Song);
               Get.back();
             },
             child: const Text(

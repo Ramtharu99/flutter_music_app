@@ -19,6 +19,7 @@ import 'package:music_app/widgets/empty_state.dart';
 import 'package:music_app/widgets/music_card.dart';
 import 'package:music_app/widgets/refreshable_scroll_view.dart';
 import 'package:music_app/widgets/section_title.dart';
+import 'package:music_app/widgets/song_menu.dart';
 import 'package:music_app/widgets/songs_list.dart';
 
 class TunerScreen extends StatefulWidget {
@@ -31,6 +32,10 @@ class TunerScreen extends StatefulWidget {
 class _TunerScreenState extends State<TunerScreen> {
   int selectedIndex = 0;
   late PageController _pageController;
+
+  // Multi-select state
+  Set<int> _selectedSongIds = {};
+  bool _isMultiSelectMode = false;
 
   final List<Map<String, dynamic>> chips = [
     {'label': 'All', 'icon': Icons.library_music},
@@ -65,70 +70,84 @@ class _TunerScreenState extends State<TunerScreen> {
     super.dispose();
   }
 
+  /// Load songs from API / cache / offline
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
     try {
-      // Get downloaded songs from offline storage
+      // Get all downloaded songs
       final downloadedSongs = _offlineStorage.getDownloadedSongs();
 
       List<Song> allSongs = [];
 
       if (_connectivityService.isOnline) {
-        // Fetch songs from the API (use the correct method)
         final response = await _apiService.getMusic();
-
         if (response.success && response.data != null) {
           allSongs = response.data!;
-          // Cache songs for offline use
-          _offlineStorage.cacheSongs(allSongs);
+          await _offlineStorage.cacheSongs(allSongs);
         } else {
-          // If API fails, fallback to cached songs
           allSongs = _offlineStorage.getCachedSongs();
         }
       } else {
-        // Offline mode: use cached songs
         allSongs = _offlineStorage.getCachedSongs();
       }
 
-      // Filter downloaded songs that are not in allSongs
-      offlineSongs = downloadedSongs
-          .where((d) => allSongs.every((s) => s.id != d.id))
-          .map(
-            (song) => song.copyWith(
-              coverImage: song.coverImage.isNotEmpty ? song.coverImage : '',
-            ),
-          )
-          .toList();
-
-      featuredSongs = allSongs.take(5).toList();
-
-      // All songs list
       songs = allSongs;
+      featuredSongs = allSongs.take(5).toList();
+      offlineSongs = downloadedSongs;
     } catch (e) {
       debugPrint('Error loading songs: $e');
       songs = _offlineStorage.getCachedSongs();
       featuredSongs = songs.take(5).toList();
-      offlineSongs = offlineSongs;
+      offlineSongs = _offlineStorage.getDownloadedSongs();
     } finally {
       setState(() => isLoading = false);
     }
   }
 
-  /// Play a song using MusicController
+  /// Play a song
   void _playSong(Song song) {
     if (song.fileUrl != null && song.fileUrl!.isNotEmpty) {
       MusicController.playFromSong(song);
     } else {
-      debugPrint('this song has not file url');
+      debugPrint('This song has no file URL');
     }
   }
 
-  ///video player
+  /// Dummy video loader
   Future<void> _loadVideos() async {
     setState(() => isLoading = true);
-
     setState(() => isLoading = false);
+  }
+
+  /// Multi-select toggle
+  void _toggleSelection(Song song) {
+    setState(() {
+      if (_selectedSongIds.contains(song.id)) {
+        _selectedSongIds.remove(song.id);
+        if (_selectedSongIds.isEmpty) _isMultiSelectMode = false;
+      } else {
+        _selectedSongIds.add(song.id);
+        _isMultiSelectMode = true;
+      }
+    });
+  }
+
+  /// Delete selected songs from offline section
+  Future<void> _deleteSelectedSongs() async {
+    final songsToDelete = offlineSongs
+        .where((s) => _selectedSongIds.contains(s.id))
+        .toList();
+
+    for (var song in songsToDelete) {
+      await _offlineStorage.removeDownloadedSong(song.id.toString());
+      offlineSongs.removeWhere((s) => s.id == song.id);
+    }
+
+    setState(() {
+      _selectedSongIds.clear();
+      _isMultiSelectMode = false;
+    });
   }
 
   @override
@@ -238,6 +257,19 @@ class _TunerScreenState extends State<TunerScreen> {
                               offlineStorageService: _offlineStorage,
                               connectivityService: _connectivityService,
                               onSongTap: _playSong,
+                              menuType: SongMenuType.all,
+                              // Show download button
+                              onDeleteSelected: (selectedSongs) async {
+                                for (var s in selectedSongs) {
+                                  await _offlineStorage.removeDownloadedSong(
+                                    s.id.toString(),
+                                  );
+                                  offlineSongs.removeWhere(
+                                    (song) => song.id == s.id,
+                                  );
+                                }
+                                setState(() {});
+                              },
                             ),
                           ],
                         ),
@@ -255,6 +287,7 @@ class _TunerScreenState extends State<TunerScreen> {
                             offlineStorageService: _offlineStorage,
                             connectivityService: _connectivityService,
                             onSongTap: _playSong,
+                            menuType: SongMenuType.all,
                           ),
                         ),
                       ),
@@ -325,20 +358,54 @@ class _TunerScreenState extends State<TunerScreen> {
                               title: 'No downloaded songs',
                               subtitle: 'Download songs to play offline',
                             )
-                          : Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: RefreshableScrollView(
-                                onRefresh: _loadData,
-                                color: AppColors.primaryColor,
-                                backgroundColor: Colors.black,
-                                child: SongsList(
-                                  songs: offlineSongs,
-                                  offlineStorageService: _offlineStorage,
-                                  connectivityService: _connectivityService,
-                                  onSongTap: _playSong,
-                                ),
+                          : RefreshableScrollView(
+                              onRefresh: _loadData,
+                              color: AppColors.primaryColor,
+                              backgroundColor: Colors.black,
+                              child: Column(
+                                children: [
+                                  if (_isMultiSelectMode)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        TextButton.icon(
+                                          onPressed: _deleteSelectedSongs,
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          label: const Text(
+                                            'Delete Selected',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  SongsList(
+                                    songs: offlineSongs,
+                                    offlineStorageService: _offlineStorage,
+                                    connectivityService: _connectivityService,
+                                    onSongTap: _playSong,
+                                    showOfflineOptions: true,
+                                    menuType: SongMenuType.offline,
+                                    // delete only
+                                    onDeleteSelected: (selectedSongs) async {
+                                      for (var s in selectedSongs) {
+                                        await _offlineStorage
+                                            .removeDownloadedSong(
+                                              s.id.toString(),
+                                            );
+                                        offlineSongs.removeWhere(
+                                          (song) => song.id == s.id,
+                                        );
+                                      }
+                                      setState(() {
+                                        _selectedSongIds.clear();
+                                        _isMultiSelectMode = false;
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                     ],
