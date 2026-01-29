@@ -7,6 +7,8 @@ class PlanCard extends StatelessWidget {
   final String price;
   final bool isBest;
   final VoidCallback onTap;
+  final List<String>? features;
+  final int? trialDays;
 
   const PlanCard({
     super.key,
@@ -15,6 +17,8 @@ class PlanCard extends StatelessWidget {
     required this.price,
     required this.onTap,
     this.isBest = false,
+    this.features,
+    this.trialDays,
   });
 
   @override
@@ -31,18 +35,21 @@ class PlanCard extends StatelessWidget {
             width: 2,
           ),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            // Title & Best Value Badge
+            Row(
+              children: [
+                Icon(
+                  isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Row(
                     children: [
                       Text(
                         title,
@@ -74,11 +81,54 @@ class PlanCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(price, style: const TextStyle(color: Colors.white70)),
-                ],
-              ),
+                ),
+              ],
             ),
+            const SizedBox(height: 6),
+
+            // Price
+            Text(price, style: const TextStyle(color: Colors.white70)),
+
+            // Trial info
+            if (trialDays != null && trialDays! > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Free trial: $trialDays days',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ),
+
+            // Features
+            if (features != null && features!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: features!
+                      .map(
+                        (feature) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white12,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            feature,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
           ],
         ),
       ),

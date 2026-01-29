@@ -1,13 +1,19 @@
+// widgets/plans_section.dart
+// Updated to use formattedPrice for the price string
+
 import 'package:flutter/material.dart';
+import 'package:music_app/models/plan_model.dart';
 import 'package:music_app/widgets/plan_card.dart';
 
 class PlansSection extends StatelessWidget {
-  final int selectedPlan;
+  final List<PlanModel> plans; // list of plans from API
+  final int selectedPlanIndex;
   final Function(int) onPlanSelected;
 
   const PlansSection({
     super.key,
-    required this.selectedPlan,
+    required this.plans,
+    required this.selectedPlanIndex,
     required this.onPlanSelected,
   });
 
@@ -25,20 +31,22 @@ class PlansSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 15),
-        PlanCard(
-          title: 'Monthly',
-          price: '\$4.99 / month',
-          isSelected: selectedPlan == 0,
-          onTap: () => onPlanSelected(0),
-        ),
-        const SizedBox(height: 12),
-        PlanCard(
-          title: 'Yearly',
-          price: '\$29.99 / year',
-          isBest: true,
-          isSelected: selectedPlan == 1,
-          onTap: () => onPlanSelected(1),
-        ),
+        // Dynamically generate plan cards
+        ...List.generate(plans.length, (index) {
+          final plan = plans[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: PlanCard(
+              title: plan.name,
+              price: '${plan.formattedPrice} / ${plan.billingPeriodText}',
+              isBest: plan.isFeatured,
+              isSelected: selectedPlanIndex == index,
+              onTap: () => onPlanSelected(index),
+              features: plan.features,
+              trialDays: plan.trialDays,
+            ),
+          );
+        }),
       ],
     );
   }

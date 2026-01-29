@@ -148,7 +148,6 @@ class AuthController extends GetxController {
           debugPrint('   - isAuthenticated: ${ApiClient().isAuthenticated}');
         }
 
-        // Now fetch profile with the stored token
         await fetchProfile();
         return true;
       } else {
@@ -156,7 +155,7 @@ class AuthController extends GetxController {
         return false;
       }
     } catch (e) {
-      debugPrint('Login error: $e');
+      debugPrint('Invalid credential');
       _errorMessage.value = 'An error occurred. Please try again.';
       return false;
     } finally {

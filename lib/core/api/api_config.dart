@@ -17,6 +17,9 @@ class ApiConfig {
   static const String changePassword = '/change-password';
   static const String deleteAccount = '/delete-account';
 
+  //choose plan
+  static const String getPlans = '/subscription-plans';
+
   // Music
   static const String getAllMusic = '/music';
   static const String musicById = '/music';

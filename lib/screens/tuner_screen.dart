@@ -300,55 +300,52 @@ class _TunerScreenState extends State<TunerScreen> {
                       ),
 
                       /// VIDEOS PAGE
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: RefreshableScrollView(
-                          onRefresh: _loadVideos,
-                          color: AppColors.primaryColor,
-                          backgroundColor: Colors.black,
-                          child: Column(
-                            children: [
-                              if (videoController.videos.isEmpty)
-                                const EmptyState(
-                                  title: 'No videos available',
-                                  subtitle: 'Pull down to refresh',
-                                )
-                              else
-                                ListView.builder(
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  shrinkWrap: true,
-                                  itemCount: videoController.videos.length,
-                                  itemBuilder: (context, index) {
-                                    final video = videoController.videos[index];
-                                    return ListTile(
-                                      leading: CachedNetworkImage(
-                                        imageUrl: video.thumbnail,
-                                        width: 80,
-                                        fit: BoxFit.cover,
+                      RefreshableScrollView(
+                        onRefresh: _loadVideos,
+                        color: AppColors.primaryColor,
+                        backgroundColor: Colors.black,
+                        child: Column(
+                          children: [
+                            if (videoController.videos.isEmpty)
+                              const EmptyState(
+                                title: 'No videos available',
+                                subtitle: 'Pull down to refresh',
+                              )
+                            else
+                              ListView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: videoController.videos.length,
+                                itemBuilder: (context, index) {
+                                  final video = videoController.videos[index];
+                                  return ListTile(
+                                    leading: CachedNetworkImage(
+                                      imageUrl: video.thumbnail,
+                                      width: 80,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    title: Text(
+                                      video.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
                                       ),
-                                      title: Text(
-                                        video.title,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      trailing: const Icon(
-                                        Icons.play_circle_fill,
-                                        color: Colors.red,
-                                      ),
-                                      onTap: () async {
-                                        await videoController.initializePlayer(
-                                          index,
-                                        );
-                                        Get.to(
-                                          () => VideoPlayerScreen(index: index),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.play_circle_fill,
+                                      color: Colors.red,
+                                    ),
+                                    onTap: () async {
+                                      await videoController.initializePlayer(
+                                        index,
+                                      );
+                                      Get.to(
+                                        () => VideoPlayerScreen(index: index),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                          ],
                         ),
                       ),
 

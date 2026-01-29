@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:music_app/core/api/api.dart';
 import 'package:music_app/models/payment_model.dart';
+import 'package:music_app/models/plan_model.dart';
 import 'package:music_app/screens/account_screen.dart';
 import 'package:music_app/services/payment_service.dart';
-import 'package:music_app/widgets/benefits_section.dart';
+import 'package:music_app/services/plan_service.dart';
 import 'package:music_app/widgets/custom_button.dart';
 import 'package:music_app/widgets/plans_section.dart';
-// Widgets
-import 'package:music_app/widgets/premium_header.dart';
 import 'package:music_app/widgets/restore_purchase_text.dart';
 
 class UpgradeScreen extends StatefulWidget {
@@ -18,20 +18,60 @@ class UpgradeScreen extends StatefulWidget {
 }
 
 class _UpgradeScreenState extends State<UpgradeScreen> {
-  int selectedPlan = 1;
+  List<PlanModel> plans = [];
+  int selectedIndex = 0;
+  bool isLoadingPlans = true;
   bool isLoading = false;
 
   final PaymentModel currentUser = PaymentModel(userEmail: 'user@example.com');
 
   int get selectedAmount {
-    return selectedPlan == 0 ? 499 : 2999;
+    if (plans.isEmpty) return 0;
+    return (double.parse(plans[selectedIndex].price) * 100).toInt();
   }
 
   String get selectedPriceText {
-    return selectedPlan == 0 ? '\$4.99 / month' : '\$29.99 / year';
+    if (plans.isEmpty) return '';
+    return '${plans[selectedIndex].formattedPrice} / ${plans[selectedIndex].billingPeriodText}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('Upgrade Screen inti = ${ApiConfig.getPlans}');
+    _fetchPlans();
+  }
+
+  Future<void> _fetchPlans() async {
+    try {
+      final fetchedPlans = await PlanService.fetchPlans();
+      debugPrint('Fetched ${fetchedPlans.length} plans:');
+      for (var plan in fetchedPlans) {
+        debugPrint('-------------------');
+        debugPrint('ID: ${plan.id}');
+        debugPrint('Name: ${plan.name}');
+        debugPrint('Price: ${plan.formattedPrice}');
+        debugPrint('Period: ${plan.billingPeriodText}');
+        debugPrint('Featured: ${plan.isFeatured}');
+        debugPrint('Trial: ${plan.trialDays} days');
+        debugPrint('Features: ${plan.features.join(", ")}');
+        debugPrint('Stripe Price ID: ${plan.stripePriceId}');
+      }
+
+      setState(() {
+        plans = fetchedPlans;
+        isLoadingPlans = false;
+      });
+    } catch (e, stack) {
+      debugPrint('Error fetching plans: $e');
+      debugPrint('$stack');
+      setState(() => isLoadingPlans = false);
+    }
   }
 
   Future<void> _handlePayment() async {
+    if (plans.isEmpty) return;
+
     setState(() => isLoading = true);
 
     try {
@@ -41,7 +81,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       );
 
       if (clientSecret == null) {
-        debugPrint('Failed payment');
+        debugPrint('Failed to create payment intent');
         return;
       }
 
@@ -51,9 +91,9 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         merchantName: 'Navakarna Music',
       );
 
-      debugPrint('payment success');
+      debugPrint('Payment success');
     } catch (e) {
-      debugPrint('Something went wrong');
+      debugPrint('Something went wrong: $e');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -61,6 +101,10 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      'UpgradeScreen BUILD → plans.length = ${plans.length} | isLoadingPlans = $isLoadingPlans | selectedIndex = $selectedIndex',
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -79,22 +123,39 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const PremiumHeader(),
+            /*const PremiumHeader(),
             const SizedBox(height: 30),
             const BenefitsSection(),
+            const SizedBox(height: 30),*/
+            if (isLoadingPlans)
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            else if (plans.isEmpty)
+              const Center(
+                child: Text(
+                  'No plans available',
+                  style: TextStyle(color: Colors.white70, fontSize: 18),
+                ),
+              )
+            else
+              PlansSection(
+                plans: plans,
+                selectedPlanIndex: selectedIndex,
+                onPlanSelected: (index) {
+                  setState(() => selectedIndex = index);
+                },
+              ),
+
             const SizedBox(height: 30),
-            PlansSection(
-              selectedPlan: selectedPlan,
-              onPlanSelected: (index) {
-                setState(() => selectedPlan = index);
-              },
-            ),
-            const SizedBox(height: 30),
-            CustomButton(
-              isLoading: isLoading,
-              priceText: selectedPriceText,
-              onPressed: _handlePayment,
-            ),
+
+            if (!isLoadingPlans && plans.isNotEmpty)
+              CustomButton(
+                isLoading: isLoading,
+                priceText: selectedPriceText,
+                onPressed: _handlePayment,
+              ),
+
             const SizedBox(height: 15),
             RestorePurchaseText(onPressed: () {}),
           ],
