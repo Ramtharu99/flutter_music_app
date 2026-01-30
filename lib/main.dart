@@ -57,7 +57,6 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       defaultTransition: Transition.fade,
       home: const SplashScreen(),
-      getPages: const [], // Removed unused route since no notifications
     );
   }
 }

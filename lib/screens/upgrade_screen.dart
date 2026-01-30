@@ -74,26 +74,60 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
 
     setState(() => isLoading = true);
 
+    final selectedPlan = plans[selectedIndex];
+    final double amount = double.parse(selectedPlan.price);
+
     try {
-      final clientSecret = await PaymentService.createTestPaymentIntent(
-        amount: selectedAmount,
-        currency: 'USD',
+      // Create Payment Intent on backend
+      final intentData = await PaymentService.createPaymentIntent(
+        type: 'subscription',
+        itemId: selectedPlan.id,
+        amount: amount,
       );
 
-      if (clientSecret == null) {
-        debugPrint('Failed to create payment intent');
+      if (intentData == null || intentData['client_secret'] == null) {
+        debugPrint('Failed to create payment intent from backend');
         return;
       }
 
-      await PaymentService.showPaymentSheet(
+      final clientSecret = intentData['client_secret'] as String;
+      final paymentIntentId = intentData['payment_intent_id'] as String;
+
+      // Show Stripe Payment Sheet
+      final success = await PaymentService.showPaymentSheet(
         context: context,
         clientSecret: clientSecret,
         merchantName: 'Navakarna Music',
       );
 
-      debugPrint('Payment success');
+      if (!success) return;
+
+      final confirmed = await PaymentService.confirmPayment(
+        paymentIntentId: paymentIntentId,
+        type: 'subscription',
+        itemId: selectedPlan.id,
+      );
+
+      if (confirmed && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Payment successful!'),
+          ),
+        );
+        setState(() {
+          currentUser.isPaid = true;
+        });
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('Payment could not be confirmed.'),
+          ),
+        );
+      }
     } catch (e) {
-      debugPrint('Something went wrong: $e');
+      debugPrint('Payment error: $e');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

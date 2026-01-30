@@ -20,6 +20,10 @@ class ApiConfig {
   //choose plan
   static const String getPlans = '/subscription-plans';
 
+  //payments
+  static const String paymentIntent = '/payment/create-intent';
+  static const String paymentConfirmation = '/payment/confirm';
+
   // Music
   static const String getAllMusic = '/music';
   static const String musicById = '/music';
